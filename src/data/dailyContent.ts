@@ -648,6 +648,206 @@ When reading code, pay attention to what errors can occur and how they are handl
       },
     ],
   },
+  {
+    text: {
+      id: 'day-4',
+      day: 4,
+      focus: 'Notice how async operations wait — and what happens while waiting.',
+      focusRu: 'Замечай, как асинхронные операции ждут — и что происходит в это время.',
+      title: 'Asynchronous Operations and Promises',
+      content: `Most programs need to do things that take time. Loading data from a server, reading a file, or waiting for user input — these operations do not complete instantly. How a program handles this waiting time is called asynchronous programming.
+
+In synchronous code, each line runs only after the previous line finishes. If line 5 takes 10 seconds, line 6 waits. The program is blocked. This is simple to understand, but it creates problems. If your program is waiting for data from a slow server, nothing else can happen.
+
+Asynchronous code works differently. When the program starts a slow operation, it does not stop and wait. Instead, it continues to the next line. Later, when the operation finishes, the program handles the result. This allows the program to stay responsive.
+
+In JavaScript, Promises are a common way to handle asynchronous operations. A Promise represents a value that might not exist yet. It can be in one of three states: pending (still waiting), fulfilled (operation succeeded), or rejected (operation failed).
+
+When you write fetch("/api/data"), the function returns a Promise immediately. It does not return the data — the data is not available yet. Instead, you use .then() to specify what should happen when the data arrives: fetch("/api/data").then(data => process(data)).
+
+The async/await syntax makes this easier to read. Instead of chaining .then() calls, you write await fetch("/api/data"). The word await pauses execution until the Promise resolves. But it only pauses that function — other parts of your program can still run.
+
+Understanding async behavior helps you avoid common bugs. If you forget await, your code runs before the data is ready. If you do not handle rejected Promises, errors disappear silently.`,
+      vocabulary: [
+        { word: 'asynchronous', translation: 'асинхронный (не блокирующий)' },
+        { word: 'synchronous', translation: 'синхронный (последовательный)' },
+        { word: 'blocked', translation: 'заблокирован' },
+        { word: 'responsive', translation: 'отзывчивый, реагирующий' },
+        { word: 'Promise', translation: 'промис (обещание результата)' },
+        { word: 'pending', translation: 'ожидающий' },
+        { word: 'fulfilled', translation: 'выполненный, успешный' },
+        { word: 'rejected', translation: 'отклонённый, с ошибкой' },
+        { word: 'await', translation: 'ждать (результата)' },
+      ],
+    },
+    tasks: [
+      {
+        id: 't4-1',
+        type: 'meaning',
+        question: 'What is the problem with synchronous code that waits for slow operations?',
+        options: [
+          'It uses too much memory',
+          'Nothing else can happen while waiting — the program is blocked',
+          'It is too fast',
+          'It cannot handle errors',
+        ],
+        correctIndex: 1,
+        explanation: 'In sync code, the whole program stops and waits. Nothing else runs.',
+        explanationRu: 'В синхронном коде вся программа останавливается и ждёт.',
+      },
+      {
+        id: 't4-2',
+        type: 'meaning',
+        question: 'What does a Promise represent?',
+        options: [
+          'An error that happened',
+          'A value that might not exist yet',
+          'A completed operation',
+          'A function to call',
+        ],
+        correctIndex: 1,
+        explanation: 'A Promise represents a value that will be available in the future.',
+        explanationRu: 'Промис представляет значение, которое будет доступно в будущем.',
+      },
+      {
+        id: 't4-3',
+        type: 'meaning',
+        question: 'What are the three states of a Promise?',
+        options: [
+          'Start, middle, end',
+          'Pending, fulfilled, rejected',
+          'Loading, success, error',
+          'Try, catch, finally',
+        ],
+        correctIndex: 1,
+        explanation: 'Pending (waiting), fulfilled (success), rejected (error).',
+        explanationRu: 'Pending (ждёт), fulfilled (успех), rejected (ошибка).',
+      },
+      {
+        id: 't4-4',
+        type: 'reflection',
+        question: 'Почему важно не забывать await при работе с асинхронными функциями? (можно по-русски)',
+        questionRu: 'Что произойдёт, если забыть await?',
+      },
+    ],
+    extraPractice: [
+      {
+        id: 'e4-1',
+        type: 'meaning',
+        question: 'fetch("/api/data") returns...',
+        options: ['The data immediately', 'A Promise', 'An error', 'Nothing'],
+        correctIndex: 1,
+        explanationRu: 'fetch() возвращает промис, не сами данные.',
+      },
+      {
+        id: 'e4-2',
+        type: 'meaning',
+        question: '"Responsive" program means...',
+        options: [
+          'A program that shows responses',
+          'A program that stays reactive, not frozen',
+          'A program that is very fast',
+          'A program with good design',
+        ],
+        correctIndex: 1,
+        explanationRu: 'Responsive = отзывчивый, не зависает.',
+      },
+      {
+        id: 'e4-3',
+        type: 'meaning',
+        question: '.then() is used to...',
+        options: [
+          'Cancel a Promise',
+          'Specify what happens when Promise resolves',
+          'Create a new Promise',
+          'Handle only errors',
+        ],
+        correctIndex: 1,
+        explanationRu: '.then() указывает, что делать когда промис выполнится.',
+      },
+      {
+        id: 'e4-4',
+        type: 'meaning',
+        question: 'await pauses...',
+        options: [
+          'The entire program',
+          'Only that function, other code can run',
+          'All Promises',
+          'Nothing',
+        ],
+        correctIndex: 1,
+        explanationRu: 'await приостанавливает только эту функцию, остальное работает.',
+      },
+      {
+        id: 'e4-5',
+        type: 'meaning',
+        question: 'If you forget await, your code...',
+        options: [
+          'Works normally',
+          'Runs before data is ready',
+          'Throws an error immediately',
+          'Waits longer',
+        ],
+        correctIndex: 1,
+        explanationRu: 'Без await код продолжит выполняться до того, как данные готовы.',
+      },
+      {
+        id: 'e4-6',
+        type: 'meaning',
+        question: 'A "pending" Promise is...',
+        options: ['Completed successfully', 'Still waiting for result', 'Failed', 'Cancelled'],
+        correctIndex: 1,
+        explanationRu: 'Pending = ещё ждёт результата.',
+      },
+      {
+        id: 'e4-7',
+        type: 'meaning',
+        question: 'Async programming helps with...',
+        options: [
+          'Making code shorter',
+          'Operations that take time (network, files)',
+          'Fixing syntax errors',
+          'Writing comments',
+        ],
+        correctIndex: 1,
+        explanationRu: 'Async помогает с операциями, которые требуют времени.',
+      },
+      {
+        id: 'e4-8',
+        type: 'meaning',
+        question: '"Rejected" Promise means...',
+        options: ['Still loading', 'Completed successfully', 'Failed with error', 'Was cancelled by user'],
+        correctIndex: 2,
+        explanationRu: 'Rejected = завершился с ошибкой.',
+      },
+    ],
+    consolidation: [
+      {
+        id: 'c4-1',
+        type: 'meaning',
+        question: 'Async code allows the program to...',
+        options: ['Stop completely', 'Continue while waiting for slow operations', 'Run faster'],
+        correctIndex: 1,
+        explanationRu: 'Асинхронный код позволяет продолжать работу во время ожидания.',
+      },
+      {
+        id: 'c4-2',
+        type: 'meaning',
+        question: 'A Promise that succeeded is in state...',
+        options: ['Pending', 'Fulfilled', 'Rejected'],
+        correctIndex: 1,
+        explanationRu: 'Успешный промис в состоянии fulfilled.',
+      },
+      {
+        id: 'c4-3',
+        type: 'meaning',
+        question: 'await only pauses...',
+        options: ['Everything', 'That specific function', 'All network requests'],
+        correctIndex: 1,
+        explanationRu: 'await приостанавливает только конкретную функцию.',
+      },
+    ],
+  },
 ];
 
 export function getDailyLesson(day: number): DailyLesson | undefined {
