@@ -13,8 +13,14 @@ interface ExtraPracticeProps {
 
 export function ExtraPractice({ lesson, isCompleted, onComplete, onMistake }: ExtraPracticeProps) {
   const [started, setStarted] = useState(false);
+  const [restarted, setRestarted] = useState(false);
 
-  if (isCompleted) {
+  const handleRestart = () => {
+    setRestarted(true);
+    setStarted(false);
+  };
+
+  if (isCompleted && !restarted) {
     return (
       <div className="text-center py-12 animate-fade-in">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success-soft mb-4">
@@ -26,7 +32,7 @@ export function ExtraPractice({ lesson, isCompleted, onComplete, onMistake }: Ex
         <p className="text-muted-foreground mb-6">
           Ты проработал словарь дня {lesson.text.day}
         </p>
-        <Button variant="outline" onClick={() => setStarted(false)}>
+        <Button variant="outline" onClick={handleRestart}>
           <RotateCcw className="w-4 h-4 mr-2" />
           Начать заново
         </Button>
