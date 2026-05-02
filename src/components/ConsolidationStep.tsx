@@ -1,6 +1,6 @@
 import { Task } from '@/data/dailyContent';
 import { DailyTasks } from './DailyTasks';
-import { Check, Star } from 'lucide-react';
+import { Check, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ConsolidationStepProps {
@@ -9,9 +9,12 @@ interface ConsolidationStepProps {
   isCompleted: boolean;
   onComplete: () => void;
   onMistake: (taskId: string, question: string, userAnswer: string, correctAnswer: string, explanationRu: string) => void;
+  onNextLesson?: () => void;
 }
 
-export function ConsolidationStep({ tasks, day, isCompleted, onComplete, onMistake }: ConsolidationStepProps) {
+export function ConsolidationStep({
+  tasks, day, isCompleted, onComplete, onMistake, onNextLesson,
+}: ConsolidationStepProps) {
   if (isCompleted) {
     return (
       <div className="text-center py-12 animate-fade-in">
@@ -19,12 +22,12 @@ export function ConsolidationStep({ tasks, day, isCompleted, onComplete, onMista
           <Star className="w-10 h-10 text-success" />
         </div>
         <h2 className="text-2xl font-reading font-medium text-foreground mb-2">
-          День {day} завершён!
+          Урок {day} завершён!
         </h2>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-          Ты закрепил главные идеи дня. Завтра продолжим.
+          Ты закрепил главные идеи урока. Готов к следующему?
         </p>
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-8">
           <Check className="w-4 h-4 text-success" />
           <span>Текст прочитан</span>
           <span className="mx-2">•</span>
@@ -32,8 +35,14 @@ export function ConsolidationStep({ tasks, day, isCompleted, onComplete, onMista
           <span>Понимание проверено</span>
           <span className="mx-2">•</span>
           <Check className="w-4 h-4 text-success" />
-          <span>День закреплён</span>
+          <span>Урок закреплён</span>
         </div>
+        {onNextLesson && (
+          <Button onClick={onNextLesson} size="lg" className="gap-2">
+            Следующий урок
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     );
   }
@@ -45,19 +54,18 @@ export function ConsolidationStep({ tasks, day, isCompleted, onComplete, onMista
           <Star className="w-6 h-6 text-primary" />
         </div>
         <h2 className="text-xl font-reading font-medium text-foreground mb-2">
-          Закрепление дня
+          Закрепление урока
         </h2>
         <p className="text-sm text-muted-foreground">
           Последние {tasks.length} вопроса на главные идеи
         </p>
       </div>
-
       <DailyTasks
         tasks={tasks}
         onComplete={onComplete}
         onMistake={onMistake}
         title="Закрепление"
-        subtitle="Основные идеи дня"
+        subtitle="Основные идеи урока"
       />
     </div>
   );
