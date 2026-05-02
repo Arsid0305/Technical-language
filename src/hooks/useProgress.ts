@@ -34,6 +34,17 @@ const defaultProgress: UserProgress = {
   recognizedActions: [],
 };
 
+function getDefaultDayProgress(day: number): DayProgress {
+  return {
+    day,
+    textCompleted: false,
+    tasksCompleted: false,
+    extraPracticeCompleted: false,
+    consolidationCompleted: false,
+    mistakes: [],
+  };
+}
+
 export function useProgress() {
   const [progress, setProgress] = useState<UserProgress>(() => {
     try {
@@ -56,14 +67,7 @@ export function useProgress() {
   }, [progress]);
 
   const getDayProgress = useCallback((day: number): DayProgress => {
-    return progress.days[day] || {
-      day,
-      textCompleted: false,
-      tasksCompleted: false,
-      extraPracticeCompleted: false,
-      consolidationCompleted: false,
-      mistakes: [],
-    };
+    return progress.days[day] ?? getDefaultDayProgress(day);
   }, [progress.days]);
 
   const markTextCompleted = useCallback((day: number) => {
@@ -72,12 +76,12 @@ export function useProgress() {
       days: {
         ...prev.days,
         [day]: {
-          ...getDayProgress(day),
+          ...(prev.days[day] ?? getDefaultDayProgress(day)),
           textCompleted: true,
         },
       },
     }));
-  }, [getDayProgress]);
+  }, []);
 
   const markTasksCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -85,12 +89,12 @@ export function useProgress() {
       days: {
         ...prev.days,
         [day]: {
-          ...getDayProgress(day),
+          ...(prev.days[day] ?? getDefaultDayProgress(day)),
           tasksCompleted: true,
         },
       },
     }));
-  }, [getDayProgress]);
+  }, []);
 
   const markExtraPracticeCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -98,12 +102,12 @@ export function useProgress() {
       days: {
         ...prev.days,
         [day]: {
-          ...getDayProgress(day),
+          ...(prev.days[day] ?? getDefaultDayProgress(day)),
           extraPracticeCompleted: true,
         },
       },
     }));
-  }, [getDayProgress]);
+  }, []);
 
   const markConsolidationCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -111,18 +115,18 @@ export function useProgress() {
       days: {
         ...prev.days,
         [day]: {
-          ...getDayProgress(day),
+          ...(prev.days[day] ?? getDefaultDayProgress(day)),
           consolidationCompleted: true,
           completedAt: Date.now(),
         },
       },
       currentDay: Math.max(prev.currentDay, day + 1),
     }));
-  }, [getDayProgress]);
+  }, []);
 
   const addMistake = useCallback((day: number, mistake: Omit<Mistake, 'day' | 'timestamp'>) => {
     setProgress((prev) => {
-      const dayProgress = getDayProgress(day);
+      const dayProgress = prev.days[day] ?? getDefaultDayProgress(day);
       return {
         ...prev,
         days: {
@@ -137,7 +141,7 @@ export function useProgress() {
         },
       };
     });
-  }, [getDayProgress]);
+  }, []);
 
   const addRecognizedAction = useCallback((action: string) => {
     setProgress((prev) => {

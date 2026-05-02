@@ -6,6 +6,22 @@ interface ProgressViewProps {
   totalDays: number;
 }
 
+function pluralDays(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день завершён';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'дня завершено';
+  return 'дней завершено';
+}
+
+function pluralTexts(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'текст прочитан';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'текста прочитано';
+  return 'текстов прочитано';
+}
+
 export function ProgressView({ progress, totalDays }: ProgressViewProps) {
   const daysCompleted = Object.values(progress.days).filter(d => d.consolidationCompleted).length;
   const textsRead = Object.values(progress.days).filter(d => d.textCompleted).length;
@@ -32,7 +48,7 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
                 {daysCompleted}
               </p>
               <p className="text-sm text-muted-foreground">
-                {daysCompleted === 1 ? 'день завершён' : 'дней завершено'}
+                {pluralDays(daysCompleted)}
               </p>
             </div>
           </div>
@@ -48,7 +64,7 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
                 {textsRead}
               </p>
               <p className="text-sm text-muted-foreground">
-                {textsRead === 1 ? 'текст прочитан' : 'текстов прочитано'}
+                {pluralTexts(textsRead)}
               </p>
             </div>
           </div>

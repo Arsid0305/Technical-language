@@ -276,20 +276,19 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
   }, [vocabulary]);
 
   useEffect(() => {
-    const handleMouseUp = (e: MouseEvent) => {
+    const showPopupForSelection = () => {
       const selection = window.getSelection();
       const selectedText = selection?.toString().trim();
-      
+
       if (!selectedText || selectedText.length > 50 || selectedText.split(' ').length > 5) {
         setPopup((prev) => ({ ...prev, visible: false }));
         return;
       }
-      
+
       const translation = findTranslation(selectedText);
       if (translation) {
         const range = selection?.getRangeAt(0);
         const rect = range?.getBoundingClientRect();
-        
         if (rect) {
           setPopup({
             visible: true,
@@ -304,16 +303,23 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
       }
     };
 
-    const handleMouseDown = () => {
-      setPopup((prev) => ({ ...prev, visible: false }));
-    };
+    const handleMouseUp = () => showPopupForSelection();
+
+    // On touch, selection finalises slightly after touchend fires
+    const handleTouchEnd = () => setTimeout(showPopupForSelection, 100);
+
+    const handleStart = () => setPopup((prev) => ({ ...prev, visible: false }));
 
     document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('mousedown', handleStart);
+    document.addEventListener('touchstart', handleStart);
 
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousedown', handleStart);
+      document.removeEventListener('touchstart', handleStart);
     };
   }, [findTranslation]);
 
