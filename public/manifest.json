@@ -1,0 +1,17 @@
+{
+  "name": "Vibe Eng",
+  "short_name": "Vibe Eng",
+  "description": "Technical English for developers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f4f2",
+  "theme_color": "#0d9f6e",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
