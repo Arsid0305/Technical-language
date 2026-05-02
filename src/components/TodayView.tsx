@@ -5,8 +5,6 @@ import { DayHeader } from './DayHeader';
 import { ReadingText } from './ReadingText';
 import { DailyTasks } from './DailyTasks';
 import { ConsolidationStep } from './ConsolidationStep';
-import { Button } from '@/components/ui/button';
-import { ChevronRight } from 'lucide-react';
 
 type Stage = 'reading' | 'tasks' | 'consolidation' | 'complete';
 
@@ -17,15 +15,13 @@ interface TodayViewProps {
   onMarkTasksCompleted: () => void;
   onMarkConsolidationCompleted: () => void;
   onMistake: (taskId: string, question: string, userAnswer: string, correctAnswer: string, explanationRu: string) => void;
+  onNextLesson: () => void;
 }
 
 export function TodayView({
-  lesson,
-  dayProgress,
-  onMarkTextCompleted,
-  onMarkTasksCompleted,
-  onMarkConsolidationCompleted,
-  onMistake,
+  lesson, dayProgress,
+  onMarkTextCompleted, onMarkTasksCompleted, onMarkConsolidationCompleted,
+  onMistake, onNextLesson,
 }: TodayViewProps) {
   const [stage, setStage] = useState<Stage>(() => {
     if (dayProgress.consolidationCompleted) return 'complete';
@@ -40,20 +36,9 @@ export function TodayView({
     else if (dayProgress.textCompleted) setStage('tasks');
   }, [dayProgress]);
 
-  const handleFinishReading = () => {
-    onMarkTextCompleted();
-    setStage('tasks');
-  };
-
-  const handleTasksComplete = () => {
-    onMarkTasksCompleted();
-    setStage('consolidation');
-  };
-
-  const handleConsolidationComplete = () => {
-    onMarkConsolidationCompleted();
-    setStage('complete');
-  };
+  const handleFinishReading = () => { onMarkTextCompleted(); setStage('tasks'); };
+  const handleTasksComplete = () => { onMarkTasksCompleted(); setStage('consolidation'); };
+  const handleConsolidationComplete = () => { onMarkConsolidationCompleted(); setStage('complete'); };
 
   return (
     <div className="pb-8">
@@ -90,7 +75,7 @@ export function TodayView({
         <ConsolidationStep
           tasks={lesson.consolidation}
           day={lesson.text.day}
-          isCompleted={dayProgress.consolidationCompleted}
+          isCompleted={false}
           onComplete={handleConsolidationComplete}
           onMistake={onMistake}
         />
@@ -103,6 +88,7 @@ export function TodayView({
           isCompleted={true}
           onComplete={() => {}}
           onMistake={onMistake}
+          onNextLesson={onNextLesson}
         />
       )}
     </div>

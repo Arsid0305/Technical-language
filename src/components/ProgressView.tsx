@@ -3,15 +3,14 @@ import { BookOpen, Calendar, Lightbulb } from 'lucide-react';
 
 interface ProgressViewProps {
   progress: UserProgress;
-  totalDays: number;
 }
 
 function pluralDays(n: number): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'день завершён';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'дня завершено';
-  return 'дней завершено';
+  if (mod10 === 1 && mod100 !== 11) return 'урок завершён';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'урока завершено';
+  return 'уроков завершено';
 }
 
 function pluralTexts(n: number): string {
@@ -22,9 +21,9 @@ function pluralTexts(n: number): string {
   return 'текстов прочитано';
 }
 
-export function ProgressView({ progress, totalDays }: ProgressViewProps) {
-  const daysCompleted = Object.values(progress.days).filter(d => d.consolidationCompleted).length;
-  const textsRead = Object.values(progress.days).filter(d => d.textCompleted).length;
+export function ProgressView({ progress }: ProgressViewProps) {
+  const daysCompleted = Object.values(progress.days).filter((d) => d.consolidationCompleted).length;
+  const textsRead = Object.values(progress.days).filter((d) => d.textCompleted).length;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -32,9 +31,7 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
         <h2 className="text-2xl font-reading font-medium text-foreground mb-2">
           Твой прогресс
         </h2>
-        <p className="text-muted-foreground">
-          Спокойное движение вперёд
-        </p>
+        <p className="text-muted-foreground">Спокойное движение вперёд</p>
       </div>
 
       <div className="grid gap-4">
@@ -44,12 +41,8 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
               <Calendar className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-3xl font-reading font-medium text-foreground">
-                {daysCompleted}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {pluralDays(daysCompleted)}
-              </p>
+              <p className="text-3xl font-reading font-medium text-foreground">{daysCompleted}</p>
+              <p className="text-sm text-muted-foreground">{pluralDays(daysCompleted)}</p>
             </div>
           </div>
         </div>
@@ -60,12 +53,8 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
               <BookOpen className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <p className="text-3xl font-reading font-medium text-foreground">
-                {textsRead}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {pluralTexts(textsRead)}
-              </p>
+              <p className="text-3xl font-reading font-medium text-foreground">{textsRead}</p>
+              <p className="text-sm text-muted-foreground">{pluralTexts(textsRead)}</p>
             </div>
           </div>
         </div>
@@ -82,10 +71,7 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {progress.recognizedActions.map((action) => (
-                    <span
-                      key={action}
-                      className="px-3 py-1 text-sm rounded-full bg-muted text-muted-foreground"
-                    >
+                    <span key={action} className="px-3 py-1 text-sm rounded-full bg-muted text-muted-foreground">
                       {action}
                     </span>
                   ))}
@@ -97,8 +83,7 @@ export function ProgressView({ progress, totalDays }: ProgressViewProps) {
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        <p>Доступно дней: {totalDays}</p>
-        <p className="mt-1">Текущий день: {progress.currentDay}</p>
+        <p>Текущий урок: {progress.currentDay}</p>
       </div>
     </div>
   );
