@@ -23,7 +23,9 @@ export interface DayProgress {
 export interface GlossaryEntry {
   translation: string
   explanation?: string
+  explanationRu?: string
   example?: string
+  exampleRu?: string
   manual?: boolean
 }
 
@@ -132,23 +134,24 @@ export function useProgress() {
     })
   }, [])
 
-  const addToGlossary = useCallback((words: { word: string; translation: string; explanation?: string; example?: string }[]) => {
+  const addToGlossary = useCallback((
+    words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]
+  ) => {
     setProgress((prev) => {
       const updated = { ...prev.glossary }
       let changed = false
-      for (const { word, translation, explanation, example } of words) {
+      for (const { word, translation, explanation, explanationRu, example, exampleRu } of words) {
         const key = word.toLowerCase().trim()
         if (!updated[key]) {
-          updated[key] = { translation, explanation, example }
+          updated[key] = { translation, explanation, explanationRu, example, exampleRu }
           changed = true
         } else {
           const patch: Partial<GlossaryEntry> = {}
           if (explanation && !updated[key].explanation) patch.explanation = explanation
+          if (explanationRu && !updated[key].explanationRu) patch.explanationRu = explanationRu
           if (example && !updated[key].example) patch.example = example
-          if (Object.keys(patch).length > 0) {
-            updated[key] = { ...updated[key], ...patch }
-            changed = true
-          }
+          if (exampleRu && !updated[key].exampleRu) patch.exampleRu = exampleRu
+          if (Object.keys(patch).length > 0) { updated[key] = { ...updated[key], ...patch }; changed = true }
         }
       }
       if (!changed) return prev

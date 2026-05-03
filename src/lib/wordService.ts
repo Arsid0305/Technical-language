@@ -5,7 +5,9 @@ export interface WordLookup {
   word: string
   translation: string
   explanation: string
+  explanationRu: string
   example: string
+  exampleRu: string
 }
 
 export async function lookupWord(word: string): Promise<WordLookup> {
