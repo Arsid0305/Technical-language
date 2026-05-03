@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { Search, Loader2, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,9 +10,10 @@ interface GlossaryViewProps {
   glossary: Record<string, GlossaryEntry>
   onAddWord: (word: string, entry: GlossaryEntry) => void
   onEnrichWord: (word: string, entry: GlossaryEntry) => void
+  onDeleteWord: (word: string) => void
 }
 
-export function GlossaryView({ glossary, onAddWord, onEnrichWord }: GlossaryViewProps) {
+export function GlossaryView({ glossary, onAddWord, onEnrichWord, onDeleteWord }: GlossaryViewProps) {
   const [query, setQuery] = useState('')
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<GlossaryEntry | null>(null)
@@ -88,7 +89,7 @@ export function GlossaryView({ glossary, onAddWord, onEnrichWord }: GlossaryView
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="Поиск слова..."
+          placeholder="Поиск на английском или русском..."
           value={query}
           onChange={(e) => { setQuery(e.target.value); setAiError(null) }}
           onKeyDown={(e) => { if (e.key === 'Enter' && noResults) handleAiSearch() }}
@@ -155,6 +156,7 @@ export function GlossaryView({ glossary, onAddWord, onEnrichWord }: GlossaryView
         onClose={() => { setSelectedWord(null); setSelectedEntry(null); setIsNewWord(false) }}
         onAdd={isNewWord ? (w, e) => { onAddWord(w, e); setQuery('') } : undefined}
         onEnrich={!isNewWord ? onEnrichWord : undefined}
+        onDelete={!isNewWord ? onDeleteWord : undefined}
       />
     </div>
   )

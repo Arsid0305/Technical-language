@@ -167,6 +167,22 @@ export function useProgress() {
     }))
   }, [])
 
+  const mergeGlossary = useCallback((remote: Record<string, GlossaryEntry>) => {
+    setProgress((prev) => {
+      // Local wins for existing entries; remote fills in missing ones
+      const merged = { ...remote, ...prev.glossary }
+      return { ...prev, glossary: merged }
+    })
+  }, [])
+
+  const deleteWord = useCallback((word: string) => {
+    const key = word.toLowerCase().trim()
+    setProgress((prev) => {
+      const { [key]: _removed, ...rest } = prev.glossary
+      return { ...prev, glossary: rest }
+    })
+  }, [])
+
   const addRecognizedAction = useCallback((action: string) => {
     setProgress((prev) => {
       if (prev.recognizedActions.includes(action)) return prev
@@ -198,6 +214,8 @@ export function useProgress() {
     addMistake,
     addToGlossary,
     addManualWord,
+    mergeGlossary,
+    deleteWord,
     addRecognizedAction,
     getTotalTextsCompleted,
     getTotalDaysCompleted,
