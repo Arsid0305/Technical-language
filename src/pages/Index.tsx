@@ -79,7 +79,6 @@ const Index = () => {
     if (currentView === 'today') setTargetDay(progress.currentDay)
   }, [currentView])
 
-  // Glossary handlers — update localStorage + sync to Supabase
   const handleAddToGlossary = useCallback((words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]) => {
     addToGlossary(words)
     const deviceId = getDeviceId()
@@ -110,6 +109,11 @@ const Index = () => {
     deleteGlossaryWord(deviceId, word.toLowerCase().trim())
       .catch(console.error)
   }, [deleteWord])
+
+  const handleSelectLesson = useCallback((day: number) => {
+    setTargetDay(day)
+    setCurrentView('today')
+  }, [])
 
   const handleMistake = (
     taskId: string, question: string, userAnswer: string,
@@ -186,7 +190,12 @@ const Index = () => {
           />
         )}
         {currentView === 'mistakes' && <MistakesView mistakes={todayMistakes} day={targetDay} />}
-        {currentView === 'progress' && <ProgressView progress={progress} />}
+        {currentView === 'progress' && (
+          <ProgressView
+            progress={progress}
+            onSelectLesson={handleSelectLesson}
+          />
+        )}
         {currentView === 'glossary' && (
           <GlossaryView
             glossary={progress.glossary}
