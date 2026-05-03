@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
-import { BookOpen, RotateCcw, BarChart2, AlertCircle } from 'lucide-react';
+import { BookOpen, RotateCcw, BarChart2, AlertCircle, BookMarked } from 'lucide-react';
 
-export type ViewMode = 'today' | 'extra' | 'progress' | 'mistakes';
+export type ViewMode = 'today' | 'extra' | 'progress' | 'mistakes' | 'glossary';
 
 interface NavigationProps {
   currentView: ViewMode;
@@ -13,6 +13,7 @@ export function Navigation({ currentView, onViewChange, hasMistakes }: Navigatio
   const navItems = [
     { id: 'today' as const, label: 'Сегодня', icon: BookOpen },
     { id: 'extra' as const, label: 'Практика', icon: RotateCcw },
+    { id: 'glossary' as const, label: 'Словарь', icon: BookMarked },
     { id: 'mistakes' as const, label: 'Ошибки', icon: AlertCircle, badge: hasMistakes },
     { id: 'progress' as const, label: 'Прогресс', icon: BarChart2 },
   ];
@@ -26,7 +27,7 @@ export function Navigation({ currentView, onViewChange, hasMistakes }: Navigatio
               key={id}
               onClick={() => onViewChange(id)}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors relative",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors relative",
                 currentView === id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
