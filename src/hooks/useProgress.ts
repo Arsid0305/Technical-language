@@ -1,45 +1,47 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react'
 
 export interface Mistake {
-  day: number;
-  taskId: string;
-  question: string;
-  userAnswer: string;
-  correctAnswer: string;
-  explanationRu: string;
-  timestamp: number;
+  day: number
+  taskId: string
+  question: string
+  userAnswer: string
+  correctAnswer: string
+  explanationRu: string
+  timestamp: number
 }
 
 export interface DayProgress {
-  day: number;
-  textCompleted: boolean;
-  tasksCompleted: boolean;
-  extraPracticeCompleted: boolean;
-  consolidationCompleted: boolean;
-  mistakes: Mistake[];
-  completedAt?: number;
+  day: number
+  textCompleted: boolean
+  tasksCompleted: boolean
+  extraPracticeCompleted: boolean
+  consolidationCompleted: boolean
+  mistakes: Mistake[]
+  completedAt?: number
 }
 
 export interface GlossaryEntry {
-  translation: string;
-  explanation?: string;
+  translation: string
+  explanation?: string
+  example?: string
+  manual?: boolean
 }
 
 export interface UserProgress {
-  currentDay: number;
-  days: Record<number, DayProgress>;
-  recognizedActions: string[];
-  glossary: Record<string, GlossaryEntry>;
+  currentDay: number
+  days: Record<number, DayProgress>
+  recognizedActions: string[]
+  glossary: Record<string, GlossaryEntry>
 }
 
-const STORAGE_KEY = 'reader-progress';
+const STORAGE_KEY = 'reader-progress'
 
 const defaultProgress: UserProgress = {
   currentDay: 1,
   days: {},
   recognizedActions: [],
   glossary: {},
-};
+}
 
 function getDefaultDayProgress(day: number): DayProgress {
   return {
@@ -49,63 +51,62 @@ function getDefaultDayProgress(day: number): DayProgress {
     extraPracticeCompleted: false,
     consolidationCompleted: false,
     mistakes: [],
-  };
+  }
 }
 
 export function useProgress() {
   const [progress, setProgress] = useState<UserProgress>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) {
-        const parsed = JSON.parse(saved);
-        // Migrate old string-based glossary to object format
+        const parsed = JSON.parse(saved)
         if (parsed.glossary) {
-          const migrated: Record<string, GlossaryEntry> = {};
+          const migrated: Record<string, GlossaryEntry> = {}
           for (const [k, v] of Object.entries(parsed.glossary)) {
-            migrated[k] = typeof v === 'string' ? { translation: v } : (v as GlossaryEntry);
+            migrated[k] = typeof v === 'string' ? { translation: v as string } : (v as GlossaryEntry)
           }
-          parsed.glossary = migrated;
+          parsed.glossary = migrated
         }
-        return { ...defaultProgress, ...parsed };
+        return { ...defaultProgress, ...parsed }
       }
     } catch (e) {
-      console.error('Failed to load progress:', e);
+      console.error('Failed to load progress:', e)
     }
-    return defaultProgress;
-  });
+    return defaultProgress
+  })
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
     } catch (e) {
-      console.error('Failed to save progress:', e);
+      console.error('Failed to save progress:', e)
     }
-  }, [progress]);
+  }, [progress])
 
   const getDayProgress = useCallback((day: number): DayProgress => {
-    return progress.days[day] ?? getDefaultDayProgress(day);
-  }, [progress.days]);
+    return progress.days[day] ?? getDefaultDayProgress(day)
+  }, [progress.days])
 
   const markTextCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
       days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), textCompleted: true } },
-    }));
-  }, []);
+    }))
+  }, [])
 
   const markTasksCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
       days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), tasksCompleted: true } },
-    }));
-  }, []);
+    }))
+  }, [])
 
   const markExtraPracticeCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
       days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), extraPracticeCompleted: true } },
-    }));
-  }, []);
+    }))
+  }, [])
 
   const markConsolidationCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
@@ -115,61 +116,74 @@ export function useProgress() {
         [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), consolidationCompleted: true, completedAt: Date.now() },
       },
       currentDay: Math.max(prev.currentDay, day + 1),
-    }));
-  }, []);
+    }))
+  }, [])
 
   const addMistake = useCallback((day: number, mistake: Omit<Mistake, 'day' | 'timestamp'>) => {
     setProgress((prev) => {
-      const dayProgress = prev.days[day] ?? getDefaultDayProgress(day);
+      const dayProgress = prev.days[day] ?? getDefaultDayProgress(day)
       return {
         ...prev,
         days: {
           ...prev.days,
           [day]: { ...dayProgress, mistakes: [...dayProgress.mistakes, { ...mistake, day, timestamp: Date.now() }] },
         },
-      };
-    });
-  }, []);
+      }
+    })
+  }, [])
 
-  const addToGlossary = useCallback((words: { word: string; translation: string; explanation?: string }[]) => {
+  const addToGlossary = useCallback((words: { word: string; translation: string; explanation?: string; example?: string }[]) => {
     setProgress((prev) => {
-      const updated = { ...prev.glossary };
-      let changed = false;
-      for (const { word, translation, explanation } of words) {
-        const key = word.toLowerCase().trim();
+      const updated = { ...prev.glossary }
+      let changed = false
+      for (const { word, translation, explanation, example } of words) {
+        const key = word.toLowerCase().trim()
         if (!updated[key]) {
-          updated[key] = { translation, explanation };
-          changed = true;
-        } else if (explanation && !updated[key].explanation) {
-          updated[key] = { ...updated[key], explanation };
-          changed = true;
+          updated[key] = { translation, explanation, example }
+          changed = true
+        } else {
+          const patch: Partial<GlossaryEntry> = {}
+          if (explanation && !updated[key].explanation) patch.explanation = explanation
+          if (example && !updated[key].example) patch.example = example
+          if (Object.keys(patch).length > 0) {
+            updated[key] = { ...updated[key], ...patch }
+            changed = true
+          }
         }
       }
-      if (!changed) return prev;
-      return { ...prev, glossary: updated };
-    });
-  }, []);
+      if (!changed) return prev
+      return { ...prev, glossary: updated }
+    })
+  }, [])
+
+  const addManualWord = useCallback((word: string, entry: GlossaryEntry) => {
+    const key = word.toLowerCase().trim()
+    setProgress((prev) => ({
+      ...prev,
+      glossary: { ...prev.glossary, [key]: { ...entry, manual: true } },
+    }))
+  }, [])
 
   const addRecognizedAction = useCallback((action: string) => {
     setProgress((prev) => {
-      if (prev.recognizedActions.includes(action)) return prev;
-      return { ...prev, recognizedActions: [...prev.recognizedActions, action] };
-    });
-  }, []);
+      if (prev.recognizedActions.includes(action)) return prev
+      return { ...prev, recognizedActions: [...prev.recognizedActions, action] }
+    })
+  }, [])
 
   const getTotalTextsCompleted = useCallback(() =>
     Object.values(progress.days).filter((d) => d.textCompleted).length,
-  [progress.days]);
+  [progress.days])
 
   const getTotalDaysCompleted = useCallback(() =>
     Object.values(progress.days).filter((d) => d.consolidationCompleted).length,
-  [progress.days]);
+  [progress.days])
 
   const getMistakesForDay = useCallback((day: number): Mistake[] =>
     getDayProgress(day).mistakes,
-  [getDayProgress]);
+  [getDayProgress])
 
-  const resetProgress = useCallback(() => setProgress(defaultProgress), []);
+  const resetProgress = useCallback(() => setProgress(defaultProgress), [])
 
   return {
     progress,
@@ -180,10 +194,11 @@ export function useProgress() {
     markConsolidationCompleted,
     addMistake,
     addToGlossary,
+    addManualWord,
     addRecognizedAction,
     getTotalTextsCompleted,
     getTotalDaysCompleted,
     getMistakesForDay,
     resetProgress,
-  };
+  }
 }

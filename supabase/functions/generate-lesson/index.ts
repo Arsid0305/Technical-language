@@ -5,46 +5,14 @@ const corsHeaders = {
 
 const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   // ── BEGINNER VOCABULARY (lessons 1–8) ──────────────────────────────────────
-  {
-    beginner: true,
-    title: 'Bug, Fix, Script, Run: Your First Dev Words',
-    detail: 'bug (ошибка в коде), fix (исправить), script (файл с кодом для запуска), run / execute (запустить), error (ошибка), output (что напечатала программа), crash (упало), log (запись в консоли). Show each word in 1–2 real sentences a developer would actually write — GitHub comments, commit messages, terminal output.',
-  },
-  {
-    beginner: true,
-    title: 'Push, Pull, Commit: Git Vocabulary',
-    detail: 'commit (сохранить снимок кода), push (отправить на сервер), pull (получить чужие изменения), branch (ветка), merge (соединить ветки), clone (скачать репозиторий), fork (своя копия чужого репо), repository / repo (хранилище кода), staging area (что войдёт в коммит). Show each word in realistic git workflow sentences.',
-  },
-  {
-    beginner: true,
-    title: 'Deploy and Build: Getting Your App Live',
-    detail: 'deploy (опубликовать приложение), build (собрать из исходников), release (выпустить версию), environment (окружение: dev / staging / production), production (живой сервер), preview (временная ссылка для проверки), pipeline (цепочка шагов автоматизации), CI/CD (непрерывная интеграция и деплой). Show each word in Vercel dashboard text, GitHub Actions logs, team Slack messages.',
-  },
-  {
-    beginner: true,
-    title: 'Description, README, Comment: Reading Dev Docs',
-    detail: 'description (краткое описание), README (главный файл документации), overview (обзор), getting started (как начать), usage (как использовать), install (установить), comment (комментарий в коде), TODO (задача прямо в коде), FIXME (известный баг в коде), deprecated (устаревшее — не использовать), returns (что возвращает функция), param / parameter (аргумент функции). Show each in real README snippets and code comments.',
-  },
-  {
-    beginner: true,
-    title: 'Error Messages: What Went Wrong',
-    detail: 'error (ошибка), warning (предупреждение, не критично), failed (провалилось), undefined (переменная не объявлена), null (специально пусто), cannot find module (модуль не найден — npm install?), is not a function (вызываешь не функцию), expected … received … (TypeScript говорит что ожидал и что получил), traceback / stack trace (цепочка вызовов до ошибки). Use real terminal / browser console output as examples.',
-  },
-  {
-    beginner: true,
-    title: 'GitHub: Issues, PRs, Reviews',
-    detail: 'issue (задача или сообщение об ошибке), pull request / PR (предложение изменений для проверки), review (проверка кода), approve (одобрить), request changes (попросить переделать), merge (принять изменения), assign (назначить на кого-то), label (метка: bug / enhancement / good first issue), diff (что изменилось), conflict (два человека изменили одно место). Use GitHub UI text and real PR comment phrasing.',
-  },
-  {
-    beginner: true,
-    title: 'Auth: Sign In, Token, Magic Link',
-    detail: 'authentication / auth (авторизация), sign in / sign out (войти / выйти), session (сессия — «ты залогинен»), token (ключ доступа), Magic Link (ссылка для входа без пароля на почту), OTP (одноразовый код), email verification (подтверждение почты), RLS — Row Level Security (пользователь видит только свои данные). Use Supabase docs phrasing and real auth error messages.',
-  },
-  {
-    beginner: true,
-    title: 'API, Fetch, Response: Talking to Servers',
-    detail: 'API (интерфейс для общения с сервером), request (запрос), response (ответ), fetch (сделать запрос из кода), endpoint (конкретный адрес API), status code (200 OK, 404 Not Found, 500 Server Error), JSON (формат данных), payload (данные внутри запроса), async / await (ждём ответ не блокируя страницу), loading (пока ждём ответа). Use real fetch() code snippets and API response examples.',
-  },
+  { beginner: true, title: 'Bug, Fix, Script, Run: Your First Dev Words', detail: 'bug (ошибка в коде), fix (исправить), script (файл с кодом для запуска), run / execute (запустить), error (ошибка), output (что напечатала программа), crash (упало), log (запись в консоли).' },
+  { beginner: true, title: 'Push, Pull, Commit: Git Vocabulary', detail: 'commit (сохранить снимок кода), push (отправить на сервер), pull (получить чужие изменения), branch (ветка), merge (соединить ветки), clone (скачать репозиторий), fork (своя копия чужого репо), repository / repo (хранилище кода), staging area (что войдёт в коммит).' },
+  { beginner: true, title: 'Deploy and Build: Getting Your App Live', detail: 'deploy (опубликовать приложение), build (собрать из исходников), release (выпустить версию), environment (dev/staging/production), production (живой сервер), preview (временная ссылка), pipeline (цепочка шагов), CI/CD.' },
+  { beginner: true, title: 'Description, README, Comment: Reading Dev Docs', detail: 'description (краткое описание), README (главный файл документации), overview (обзор), getting started (как начать), usage (как использовать), install (установить), comment (комментарий в коде), TODO, FIXME, deprecated (устаревшее), returns (что возвращает), param / parameter.' },
+  { beginner: true, title: 'Error Messages: What Went Wrong', detail: 'error, warning, failed, undefined, null, cannot find module, is not a function, expected … received …, traceback / stack trace.' },
+  { beginner: true, title: 'GitHub: Issues, PRs, Reviews', detail: 'issue, pull request / PR, review, approve, request changes, merge, assign, label (bug/enhancement/good first issue), diff, conflict.' },
+  { beginner: true, title: 'Auth: Sign In, Token, Magic Link', detail: 'authentication / auth, sign in / sign out, session, token, Magic Link, OTP, email verification, RLS — Row Level Security.' },
+  { beginner: true, title: 'API, Fetch, Response: Talking to Servers', detail: 'API, request, response, fetch, endpoint, status code (200/404/500), JSON, payload, async / await, loading.' },
 
   // ── TOOL DEEP-DIVES (lessons 9+) ───────────────────────────────────────────
   { title: 'The Terminal — Your First Tool', detail: 'cd, ls/dir, pwd, mkdir, rm; what a file path is; flags and arguments; tab completion; running scripts from the terminal' },
@@ -104,136 +72,76 @@ Deno.serve(async (req) => {
 
     const difficultyHint =
       mistakeCount > 3
-        ? 'The student made many mistakes — use even simpler sentences and add more translation hints in parentheses.'
+        ? 'The student made many mistakes — use simpler sentences.'
         : mistakeCount === 0 && lessonNumber > 1
-        ? 'The student did perfectly — you can use slightly more natural phrasing.'
+        ? 'The student did perfectly — use slightly more natural phrasing.'
         : ''
 
     const isBeginnerLesson = topic.beginner === true
 
-    const vocabFormat = `{"word": "exact term from text", "translation": "перевод", "explanation": "1–2 предложения по-русски: что это значит и где встретишь"}`
+    const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}` 
 
     const prompt = isBeginnerLesson
-      ? `You are creating English vocabulary lessons for a Russian beginner developer. She already uses these words in Russian daily (баг, деплой, пуш, etc.) but wants to recognise and understand them when reading technical English.
+      ? `You are creating English vocabulary lessons for a Russian beginner developer. She uses these words in Russian daily but wants to recognise them in technical English.
 
-Lesson ${lessonNumber} — VOCABULARY LESSON
+Lesson ${lessonNumber} — VOCABULARY
 Topic: ${topic.title}
-Words to cover: ${topic.detail}
+Words: ${topic.detail}
 ${difficultyHint}
 
-Write a SHORT reading text (180–220 words) that naturally uses ALL the vocabulary words listed. The text should feel like a real developer message — a GitHub comment thread, a team Slack message, a short README section, or a developer blog intro. DO NOT write a dictionary. Embed the words in context. Keep sentences short and clear.
+Write a SHORT text (180–220 words) using ALL vocabulary words naturally — like a GitHub comment thread, Slack message, or README section.
 
-Return ONLY a JSON object, no markdown:
+Return ONLY JSON:
 {
   "text": {
     "id": "day-${lessonNumber}",
     "day": ${lessonNumber},
-    "focus": "One sentence in English: what vocabulary this lesson covers",
+    "focus": "What vocabulary this lesson covers (English)",
     "focusRu": "То же по-русски",
-    "title": "Lesson title in English",
-    "content": "180–220 word text. Natural developer English. Use ALL vocabulary words from the topic naturally in context.",
-    "vocabulary": [
-      ${vocabFormat}
-    ]
+    "title": "Lesson title",
+    "content": "180–220 word natural developer text using all vocabulary words.",
+    "vocabulary": [${vocabItem}]
   },
-  "tasks": [
-    {
-      "id": "t${lessonNumber}-1",
-      "type": "meaning",
-      "question": "What does [word from text] mean?",
-      "options": ["option A", "option B", "option C", "option D"],
-      "correctIndex": 0,
-      "explanationRu": "Объяснение по-русски"
-    }
-  ],
-  "extraPractice": [
-    {
-      "id": "e${lessonNumber}-1",
-      "type": "meaning",
-      "question": "Which sentence uses [word] correctly?",
-      "options": ["option A", "option B", "option C"],
-      "correctIndex": 1,
-      "explanationRu": "Объяснение по-русски"
-    }
-  ],
-  "consolidation": [
-    {
-      "id": "c${lessonNumber}-1",
-      "type": "meaning",
-      "question": "Question checking understanding of the vocabulary in context",
-      "options": ["option A", "option B", "option C"],
-      "correctIndex": 0,
-      "explanationRu": "Объяснение по-русски"
-    }
-  ]
+  "tasks": [{"id": "t${lessonNumber}-1", "type": "meaning", "question": "What does [word] mean?", "options": ["A","B","C","D"], "correctIndex": 0, "explanationRu": "По-русски"}],
+  "extraPractice": [{"id": "e${lessonNumber}-1", "type": "meaning", "question": "Which sentence uses [word] correctly?", "options": ["A","B","C"], "correctIndex": 0, "explanationRu": "По-русски"}],
+  "consolidation": [{"id": "c${lessonNumber}-1", "type": "meaning", "question": "Question on vocabulary", "options": ["A","B","C"], "correctIndex": 0, "explanationRu": "По-русски"}]
 }
 
 Requirements:
-- vocabulary: list EVERY word from the topic (10–14 items), each with word + translation + explanation
-- explanation: 1–2 sentences in Russian — practical, what it means in action, where you see it
-- tasks: 4 questions — each asks what a specific word means
-- extraPractice: 5 questions — choose the correct usage of a word
-- consolidation: exactly 3 questions testing overall understanding
-- All questions in English, all explanationRu in Russian
-- Questions must be SIMPLE — this is lesson ${lessonNumber}, a complete beginner`
-      : `You are creating English reading lessons for a Russian developer who already knows these tools in Russian and uses them daily. They want to learn to READ technical English — docs, GitHub comments, Stack Overflow answers, error messages.
+- vocabulary: 10–14 items, every word with translation + explanation + example
+- tasks: 4 questions (what does X mean)
+- extraPractice: 5 questions (correct usage)
+- consolidation: exactly 3 questions
+- All questions in English, all explanationRu in Russian`
+      : `You are creating English reading lessons for a Russian developer who uses these tools daily. Goal: read technical English — docs, GitHub, error messages.
 
 Lesson ${lessonNumber}
 Topic: ${topic.title}
-Key concepts: ${topic.detail}
+Concepts: ${topic.detail}
 ${difficultyHint}
 
-Return ONLY a JSON object, no markdown, no explanation:
+Return ONLY JSON:
 {
   "text": {
     "id": "day-${lessonNumber}",
     "day": ${lessonNumber},
-    "focus": "One sentence in English: what reading skill this lesson builds",
+    "focus": "What reading skill this lesson builds (English)",
     "focusRu": "То же по-русски",
-    "title": "Lesson title in English",
-    "content": "Reading text 320-400 words. Write like a developer explains to a colleague — natural technical English. Include real commands (git commit -m, npm ci), actual error message phrasing, real patterns from docs.",
-    "vocabulary": [
-      ${vocabFormat}
-    ]
+    "title": "Lesson title",
+    "content": "320–400 words. Natural dev English. Real commands, error phrasing, real doc patterns.",
+    "vocabulary": [${vocabItem}]
   },
-  "tasks": [
-    {
-      "id": "t${lessonNumber}-1",
-      "type": "meaning",
-      "question": "Question in English testing reading comprehension",
-      "options": ["option A", "option B", "option C", "option D"],
-      "correctIndex": 0,
-      "explanationRu": "Объяснение по-русски почему этот ответ правильный"
-    }
-  ],
-  "extraPractice": [
-    {
-      "id": "e${lessonNumber}-1",
-      "type": "meaning",
-      "question": "Vocabulary question: what does X mean in this context?",
-      "options": ["option A", "option B", "option C"],
-      "correctIndex": 1,
-      "explanationRu": "Объяснение по-русски"
-    }
-  ],
-  "consolidation": [
-    {
-      "id": "c${lessonNumber}-1",
-      "type": "meaning",
-      "question": "Question about the main concept from the lesson",
-      "options": ["option A", "option B", "option C"],
-      "correctIndex": 0,
-      "explanationRu": "Объяснение по-русски"
-    }
-  ]
+  "tasks": [{"id": "t${lessonNumber}-1", "type": "meaning", "question": "Comprehension question", "options": ["A","B","C","D"], "correctIndex": 0, "explanationRu": "По-русски"}],
+  "extraPractice": [{"id": "e${lessonNumber}-1", "type": "meaning", "question": "Vocabulary question", "options": ["A","B","C"], "correctIndex": 0, "explanationRu": "По-русски"}],
+  "consolidation": [{"id": "c${lessonNumber}-1", "type": "meaning", "question": "Core concept question", "options": ["A","B","C"], "correctIndex": 0, "explanationRu": "По-русски"}]
 }
 
 Requirements:
-- vocabulary: 8-12 items, each with word + translation + explanation (1–2 sentences Russian, practical)
-- tasks: 4-5 comprehension questions
-- extraPractice: 5-6 vocabulary questions
-- consolidation: exactly 3 questions on the core concept
-- All questions in English, all explanationRu in Russian`
+- vocabulary: 8–12 items, each with translation + explanation + example
+- tasks: 4–5 comprehension questions
+- extraPractice: 5–6 vocabulary questions
+- consolidation: exactly 3 questions
+- All questions English, all explanationRu Russian`
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
