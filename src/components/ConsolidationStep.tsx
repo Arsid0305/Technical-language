@@ -1,6 +1,6 @@
 import { Task } from '@/data/dailyContent';
 import { DailyTasks } from './DailyTasks';
-import { Check, Star, ArrowRight } from 'lucide-react';
+import { Check, Star, ArrowRight, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ConsolidationStepProps {
@@ -10,10 +10,11 @@ interface ConsolidationStepProps {
   onComplete: () => void;
   onMistake: (taskId: string, question: string, userAnswer: string, correctAnswer: string, explanationRu: string) => void;
   onNextLesson?: () => void;
+  onRepeat?: () => void;
 }
 
 export function ConsolidationStep({
-  tasks, day, isCompleted, onComplete, onMistake, onNextLesson,
+  tasks, day, isCompleted, onComplete, onMistake, onNextLesson, onRepeat,
 }: ConsolidationStepProps) {
   if (isCompleted) {
     return (
@@ -37,12 +38,20 @@ export function ConsolidationStep({
           <Check className="w-4 h-4 text-success" />
           <span>Урок закреплён</span>
         </div>
-        {onNextLesson && (
-          <Button onClick={onNextLesson} size="lg" className="gap-2">
-            Следующий урок
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        )}
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          {onRepeat && (
+            <Button variant="outline" onClick={onRepeat} className="gap-2">
+              <RotateCcw className="w-4 h-4" />
+              Повторить
+            </Button>
+          )}
+          {onNextLesson && (
+            <Button onClick={onNextLesson} size="lg" className="gap-2">
+              Следующий урок
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
