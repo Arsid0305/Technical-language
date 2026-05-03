@@ -19,3 +19,6 @@ jobs:
       - run: supabase functions deploy generate-lesson --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SBP_ACCESS_TOKEN }}
+      - run: supabase functions deploy lookup-word --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SBP_ACCESS_TOKEN }}
