@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import type { DailyLesson } from '@/data/dailyContent'
 import { fetchOrGenerateLesson } from '@/lib/lessonService'
+import type { GlossaryEntry } from '@/hooks/useProgress'
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('today')
@@ -31,9 +32,7 @@ const Index = () => {
     getMistakesForDay,
   } = useProgress()
 
-  useEffect(() => {
-    setTargetDay(progress.currentDay)
-  }, [])
+  useEffect(() => { setTargetDay(progress.currentDay) }, [])
 
   const dayProgress = getDayProgress(targetDay)
   const todayMistakes = getMistakesForDay(targetDay)
@@ -68,11 +67,14 @@ const Index = () => {
   const handleMistake = (
     taskId: string, question: string, userAnswer: string,
     correctAnswer: string, explanationRu: string
-  ) => {
-    addMistake(targetDay, { taskId, question, userAnswer, correctAnswer, explanationRu })
-  }
+  ) => addMistake(targetDay, { taskId, question, userAnswer, correctAnswer, explanationRu })
 
   const handleNextLesson = () => setTargetDay((d) => d + 1)
+
+  // Enrich glossary entry after auto-fetch in WordDetailSheet
+  const handleEnrichWord = (word: string, entry: GlossaryEntry) => {
+    addToGlossary([{ word, ...entry }])
+  }
 
   const canGoBack = targetDay > 1
   const canGoForward = targetDay < progress.currentDay
@@ -126,8 +128,7 @@ const Index = () => {
       <main className="max-w-2xl mx-auto px-4 py-8 pb-24">
         {currentView === 'today' && (
           <TodayView
-            lesson={lesson}
-            dayProgress={dayProgress}
+            lesson={lesson} dayProgress={dayProgress}
             onMarkTextCompleted={() => markTextCompleted(targetDay)}
             onMarkTasksCompleted={() => markTasksCompleted(targetDay)}
             onMarkConsolidationCompleted={() => markConsolidationCompleted(targetDay)}
@@ -137,8 +138,7 @@ const Index = () => {
         )}
         {currentView === 'extra' && (
           <ExtraPractice
-            lesson={lesson}
-            isCompleted={dayProgress.extraPracticeCompleted}
+            lesson={lesson} isCompleted={dayProgress.extraPracticeCompleted}
             onComplete={() => markExtraPracticeCompleted(targetDay)}
             onMistake={handleMistake}
           />
@@ -149,15 +149,12 @@ const Index = () => {
           <GlossaryView
             glossary={progress.glossary}
             onAddWord={addManualWord}
+            onEnrichWord={handleEnrichWord}
           />
         )}
       </main>
 
-      <Navigation
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        hasMistakes={todayMistakes.length > 0}
-      />
+      <Navigation currentView={currentView} onViewChange={setCurrentView} hasMistakes={todayMistakes.length > 0} />
     </div>
   )
 }

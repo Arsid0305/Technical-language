@@ -2,7 +2,9 @@ export interface VocabularyItem {
   word: string
   translation: string
   explanation?: string
+  explanationRu?: string
   example?: string
+  exampleRu?: string
 }
 
 export interface DailyText {

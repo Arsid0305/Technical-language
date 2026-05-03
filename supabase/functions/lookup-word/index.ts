@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const { word } = await req.json()
     const openaiKey = Deno.env.get('OPENAI_API_KEY')!
 
-    const prompt = `You are a technical English dictionary for Russian developers learning to read dev docs and code.
+    const prompt = `You are a bilingual technical English dictionary for Russian developers learning to read dev docs.
 
 Look up this term: "${word}"
 
@@ -20,8 +20,10 @@ Return ONLY a JSON object, no markdown:
 {
   "word": "${word}",
   "translation": "перевод на русский (1–4 слова)",
-  "explanation": "2–3 предложения по-русски: что это такое, зачем используется, где встретишь в разработке",
-  "example": "Одно предложение на английском: реальный пример из GitHub, терминала, документации или комментария разработчика"
+  "explanation": "Definition in English: 1-2 clear sentences explaining what this term means in a developer context.",
+  "explanationRu": "То же по-русски: 1–2 предложения.",
+  "example": "One real English sentence showing this word in a developer context (GitHub comment, terminal output, error message, or docs).",
+  "exampleRu": "Перевод примера на русский."
 }
 
 If "${word}" is not a technical term, still explain it in a developer context.`

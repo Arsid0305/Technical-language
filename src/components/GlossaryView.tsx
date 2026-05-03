@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Search, Loader2, Plus, Sparkles } from 'lucide-react'
+import { Search, Loader2, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { WordDetailSheet } from '@/components/WordDetailSheet'
@@ -9,22 +9,26 @@ import type { GlossaryEntry } from '@/hooks/useProgress'
 interface GlossaryViewProps {
   glossary: Record<string, GlossaryEntry>
   onAddWord: (word: string, entry: GlossaryEntry) => void
+  onEnrichWord: (word: string, entry: GlossaryEntry) => void
 }
 
-export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
+export function GlossaryView({ glossary, onAddWord, onEnrichWord }: GlossaryViewProps) {
   const [query, setQuery] = useState('')
   const [selectedWord, setSelectedWord] = useState<string | null>(null)
   const [selectedEntry, setSelectedEntry] = useState<GlossaryEntry | null>(null)
   const [isNewWord, setIsNewWord] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const entries = useMemo(() => {
     const q = query.toLowerCase().trim()
     return Object.entries(glossary)
-      .filter(([word, { translation, explanation }]) =>
-        !q || word.includes(q) || translation.toLowerCase().includes(q) || (explanation ?? '').toLowerCase().includes(q)
+      .filter(([word, { translation, explanation, explanationRu }]) =>
+        !q ||
+        word.includes(q) ||
+        translation.toLowerCase().includes(q) ||
+        (explanation ?? '').toLowerCase().includes(q) ||
+        (explanationRu ?? '').toLowerCase().includes(q)
       )
       .sort(([a], [b]) => a.localeCompare(b))
   }, [glossary, query])
@@ -58,7 +62,9 @@ export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
       openWord(result.word, {
         translation: result.translation,
         explanation: result.explanation,
+        explanationRu: result.explanationRu,
         example: result.example,
+        exampleRu: result.exampleRu,
       }, true)
     } catch {
       setAiError('Не удалось найти. Проверьте соединение.')
@@ -81,8 +87,7 @@ export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          ref={inputRef}
-          className="pl-9 pr-4"
+          className="pl-9"
           placeholder="Поиск слова..."
           value={query}
           onChange={(e) => { setQuery(e.target.value); setAiError(null) }}
@@ -92,32 +97,17 @@ export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
 
       {noResults && (
         <div className="text-center space-y-3 py-4">
-          <p className="text-sm text-muted-foreground">
-            «{query}» нет в вашем словаре
-          </p>
+          <p className="text-sm text-muted-foreground">«{query}» нет в вашем словаре</p>
           {aiError && <p className="text-xs text-destructive">{aiError}</p>}
-          <Button
-            onClick={handleAiSearch}
-            disabled={aiLoading}
-            variant="default"
-            className="gap-2"
-          >
-            {aiLoading
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Sparkles className="w-4 h-4" />}
+          <Button onClick={handleAiSearch} disabled={aiLoading} className="gap-2">
+            {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {aiLoading ? 'Ищу...' : 'Найти через AI'}
           </Button>
         </div>
       )}
 
       {!noResults && query.trim().length > 1 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-2 text-muted-foreground"
-          disabled={aiLoading}
-          onClick={handleAiSearch}
-        >
+        <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" disabled={aiLoading} onClick={handleAiSearch}>
           {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
           Спросить AI про «{query}»
         </Button>
@@ -140,8 +130,10 @@ export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
                     <span className="font-reading font-semibold text-foreground">{word}</span>
                     <span className="text-sm text-primary font-medium text-right shrink-0">{entry.translation}</span>
                   </div>
-                  {entry.explanation && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{entry.explanation}</p>
+                  {(entry.explanation || entry.explanationRu) && (
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                      {entry.explanation ?? entry.explanationRu}
+                    </p>
                   )}
                 </button>
               ))}
@@ -162,6 +154,7 @@ export function GlossaryView({ glossary, onAddWord }: GlossaryViewProps) {
         entry={selectedEntry}
         onClose={() => { setSelectedWord(null); setSelectedEntry(null); setIsNewWord(false) }}
         onAdd={isNewWord ? (w, e) => { onAddWord(w, e); setQuery('') } : undefined}
+        onEnrich={!isNewWord ? onEnrichWord : undefined}
       />
     </div>
   )
