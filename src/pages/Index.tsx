@@ -5,6 +5,7 @@ import { TodayView } from '@/components/TodayView';
 import { ExtraPractice } from '@/components/ExtraPractice';
 import { ProgressView } from '@/components/ProgressView';
 import { MistakesView } from '@/components/MistakesView';
+import { GlossaryView } from '@/components/GlossaryView';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import type { DailyLesson } from '@/data/dailyContent';
@@ -26,6 +27,7 @@ const Index = () => {
     markConsolidationCompleted,
     markExtraPracticeCompleted,
     addMistake,
+    addToGlossary,
     getMistakesForDay,
   } = useProgress();
 
@@ -48,7 +50,15 @@ const Index = () => {
       : 0;
 
     fetchOrGenerateLesson(targetDay, prevMistakeCount)
-      .then((l) => { if (!cancelled) { setLesson(l); setLoading(false); } })
+      .then((l) => {
+        if (!cancelled) {
+          setLesson(l);
+          setLoading(false);
+          if (l.text?.vocabulary) {
+            addToGlossary(l.text.vocabulary);
+          }
+        }
+      })
       .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false); } });
 
     return () => { cancelled = true; };
@@ -99,9 +109,11 @@ const Index = () => {
 
   if (!lesson) return null;
 
+  const showLessonNav = currentView === 'today' || currentView === 'extra';
+
   return (
     <div className="min-h-screen bg-reading-bg">
-      {(currentView === 'today' || currentView === 'extra') && (
+      {showLessonNav && (
         <div className="sticky top-0 z-30 bg-reading-bg/95 backdrop-blur-sm border-b border-border">
           <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
             <Button
@@ -148,6 +160,9 @@ const Index = () => {
         )}
         {currentView === 'progress' && (
           <ProgressView progress={progress} />
+        )}
+        {currentView === 'glossary' && (
+          <GlossaryView glossary={progress.glossary} />
         )}
       </main>
 

@@ -24,6 +24,7 @@ export interface UserProgress {
   currentDay: number;
   days: Record<number, DayProgress>;
   recognizedActions: string[];
+  glossary: Record<string, string>;
 }
 
 const STORAGE_KEY = 'reader-progress';
@@ -32,6 +33,7 @@ const defaultProgress: UserProgress = {
   currentDay: 1,
   days: {},
   recognizedActions: [],
+  glossary: {},
 };
 
 function getDefaultDayProgress(day: number): DayProgress {
@@ -50,7 +52,8 @@ export function useProgress() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return { ...defaultProgress, ...parsed };
       }
     } catch (e) {
       console.error('Failed to load progress:', e);
@@ -143,15 +146,26 @@ export function useProgress() {
     });
   }, []);
 
+  const addToGlossary = useCallback((words: { word: string; translation: string }[]) => {
+    setProgress((prev) => {
+      const updated = { ...prev.glossary };
+      let changed = false;
+      for (const { word, translation } of words) {
+        const key = word.toLowerCase().trim();
+        if (!updated[key]) {
+          updated[key] = translation;
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      return { ...prev, glossary: updated };
+    });
+  }, []);
+
   const addRecognizedAction = useCallback((action: string) => {
     setProgress((prev) => {
-      if (prev.recognizedActions.includes(action)) {
-        return prev;
-      }
-      return {
-        ...prev,
-        recognizedActions: [...prev.recognizedActions, action],
-      };
+      if (prev.recognizedActions.includes(action)) return prev;
+      return { ...prev, recognizedActions: [...prev.recognizedActions, action] };
     });
   }, []);
 
@@ -179,6 +193,7 @@ export function useProgress() {
     markExtraPracticeCompleted,
     markConsolidationCompleted,
     addMistake,
+    addToGlossary,
     addRecognizedAction,
     getTotalTextsCompleted,
     getTotalDaysCompleted,
