@@ -5,7 +5,6 @@ const corsHeaders = {
 
 const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   // ── BEGINNER VOCABULARY (lessons 1–8) ──────────────────────────────────────
-  // Short vocabulary-focused lessons. Real sentences from GitHub, error messages, docs.
   {
     beginner: true,
     title: 'Bug, Fix, Script, Run: Your First Dev Words',
@@ -89,7 +88,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Return cached lesson if it exists
     const existingRes = await fetch(
       `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
       { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
@@ -113,6 +111,8 @@ Deno.serve(async (req) => {
 
     const isBeginnerLesson = topic.beginner === true
 
+    const vocabFormat = `{"word": "exact term from text", "translation": "перевод", "explanation": "1–2 предложения по-русски: что это значит и где встретишь"}`
+
     const prompt = isBeginnerLesson
       ? `You are creating English vocabulary lessons for a Russian beginner developer. She already uses these words in Russian daily (баг, деплой, пуш, etc.) but wants to recognise and understand them when reading technical English.
 
@@ -133,7 +133,7 @@ Return ONLY a JSON object, no markdown:
     "title": "Lesson title in English",
     "content": "180–220 word text. Natural developer English. Use ALL vocabulary words from the topic naturally in context.",
     "vocabulary": [
-      {"word": "exact word or phrase from the text", "translation": "перевод"}
+      ${vocabFormat}
     ]
   },
   "tasks": [
@@ -169,7 +169,8 @@ Return ONLY a JSON object, no markdown:
 }
 
 Requirements:
-- vocabulary: list EVERY word from the topic (10–14 items)
+- vocabulary: list EVERY word from the topic (10–14 items), each with word + translation + explanation
+- explanation: 1–2 sentences in Russian — practical, what it means in action, where you see it
 - tasks: 4 questions — each asks what a specific word means
 - extraPractice: 5 questions — choose the correct usage of a word
 - consolidation: exactly 3 questions testing overall understanding
@@ -190,9 +191,9 @@ Return ONLY a JSON object, no markdown, no explanation:
     "focus": "One sentence in English: what reading skill this lesson builds",
     "focusRu": "То же по-русски",
     "title": "Lesson title in English",
-    "content": "Reading text 320-400 words. Write like a developer explains to a colleague — natural technical English. Include real commands (git commit -m, npm ci), actual error message phrasing, real patterns from docs. Do NOT oversimplify or use classroom language.",
+    "content": "Reading text 320-400 words. Write like a developer explains to a colleague — natural technical English. Include real commands (git commit -m, npm ci), actual error message phrasing, real patterns from docs.",
     "vocabulary": [
-      {"word": "term or phrase from the text", "translation": "перевод"}
+      ${vocabFormat}
     ]
   },
   "tasks": [
@@ -228,19 +229,15 @@ Return ONLY a JSON object, no markdown, no explanation:
 }
 
 Requirements:
-- vocabulary: 8-12 items (real phrases and collocations from your text)
+- vocabulary: 8-12 items, each with word + translation + explanation (1–2 sentences Russian, practical)
 - tasks: 4-5 comprehension questions
 - extraPractice: 5-6 vocabulary questions
 - consolidation: exactly 3 questions on the core concept
-- All questions in English, all explanationRu in Russian
-- Text must feel authentic: real commands, real error phrasing, the kind of English developers actually write`
+- All questions in English, all explanationRu in Russian`
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -252,7 +249,6 @@ Requirements:
     const openaiData = await openaiRes.json()
     const lessonContent = JSON.parse(openaiData.choices[0].message.content)
 
-    // Cache in DB
     await fetch(`${supabaseUrl}/rest/v1/lessons`, {
       method: 'POST',
       headers: {

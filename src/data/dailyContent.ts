@@ -1,3 +1,9 @@
+export interface VocabularyItem {
+  word: string;
+  translation: string;
+  explanation?: string;
+}
+
 export interface DailyText {
   id: string;
   day: number;
@@ -5,7 +11,7 @@ export interface DailyText {
   focusRu: string;
   title: string;
   content: string;
-  vocabulary: { word: string; translation: string }[];
+  vocabulary: VocabularyItem[];
 }
 
 export interface Task {

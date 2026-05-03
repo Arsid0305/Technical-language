@@ -20,11 +20,16 @@ export interface DayProgress {
   completedAt?: number;
 }
 
+export interface GlossaryEntry {
+  translation: string;
+  explanation?: string;
+}
+
 export interface UserProgress {
   currentDay: number;
   days: Record<number, DayProgress>;
   recognizedActions: string[];
-  glossary: Record<string, string>;
+  glossary: Record<string, GlossaryEntry>;
 }
 
 const STORAGE_KEY = 'reader-progress';
@@ -53,6 +58,14 @@ export function useProgress() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Migrate old string-based glossary to object format
+        if (parsed.glossary) {
+          const migrated: Record<string, GlossaryEntry> = {};
+          for (const [k, v] of Object.entries(parsed.glossary)) {
+            migrated[k] = typeof v === 'string' ? { translation: v } : (v as GlossaryEntry);
+          }
+          parsed.glossary = migrated;
+        }
         return { ...defaultProgress, ...parsed };
       }
     } catch (e) {
@@ -76,39 +89,21 @@ export function useProgress() {
   const markTextCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
-      days: {
-        ...prev.days,
-        [day]: {
-          ...(prev.days[day] ?? getDefaultDayProgress(day)),
-          textCompleted: true,
-        },
-      },
+      days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), textCompleted: true } },
     }));
   }, []);
 
   const markTasksCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
-      days: {
-        ...prev.days,
-        [day]: {
-          ...(prev.days[day] ?? getDefaultDayProgress(day)),
-          tasksCompleted: true,
-        },
-      },
+      days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), tasksCompleted: true } },
     }));
   }, []);
 
   const markExtraPracticeCompleted = useCallback((day: number) => {
     setProgress((prev) => ({
       ...prev,
-      days: {
-        ...prev.days,
-        [day]: {
-          ...(prev.days[day] ?? getDefaultDayProgress(day)),
-          extraPracticeCompleted: true,
-        },
-      },
+      days: { ...prev.days, [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), extraPracticeCompleted: true } },
     }));
   }, []);
 
@@ -117,11 +112,7 @@ export function useProgress() {
       ...prev,
       days: {
         ...prev.days,
-        [day]: {
-          ...(prev.days[day] ?? getDefaultDayProgress(day)),
-          consolidationCompleted: true,
-          completedAt: Date.now(),
-        },
+        [day]: { ...(prev.days[day] ?? getDefaultDayProgress(day)), consolidationCompleted: true, completedAt: Date.now() },
       },
       currentDay: Math.max(prev.currentDay, day + 1),
     }));
@@ -134,26 +125,23 @@ export function useProgress() {
         ...prev,
         days: {
           ...prev.days,
-          [day]: {
-            ...dayProgress,
-            mistakes: [
-              ...dayProgress.mistakes,
-              { ...mistake, day, timestamp: Date.now() },
-            ],
-          },
+          [day]: { ...dayProgress, mistakes: [...dayProgress.mistakes, { ...mistake, day, timestamp: Date.now() }] },
         },
       };
     });
   }, []);
 
-  const addToGlossary = useCallback((words: { word: string; translation: string }[]) => {
+  const addToGlossary = useCallback((words: { word: string; translation: string; explanation?: string }[]) => {
     setProgress((prev) => {
       const updated = { ...prev.glossary };
       let changed = false;
-      for (const { word, translation } of words) {
+      for (const { word, translation, explanation } of words) {
         const key = word.toLowerCase().trim();
         if (!updated[key]) {
-          updated[key] = translation;
+          updated[key] = { translation, explanation };
+          changed = true;
+        } else if (explanation && !updated[key].explanation) {
+          updated[key] = { ...updated[key], explanation };
           changed = true;
         }
       }
@@ -169,21 +157,19 @@ export function useProgress() {
     });
   }, []);
 
-  const getTotalTextsCompleted = useCallback(() => {
-    return Object.values(progress.days).filter((d) => d.textCompleted).length;
-  }, [progress.days]);
+  const getTotalTextsCompleted = useCallback(() =>
+    Object.values(progress.days).filter((d) => d.textCompleted).length,
+  [progress.days]);
 
-  const getTotalDaysCompleted = useCallback(() => {
-    return Object.values(progress.days).filter((d) => d.consolidationCompleted).length;
-  }, [progress.days]);
+  const getTotalDaysCompleted = useCallback(() =>
+    Object.values(progress.days).filter((d) => d.consolidationCompleted).length,
+  [progress.days]);
 
-  const getMistakesForDay = useCallback((day: number): Mistake[] => {
-    return getDayProgress(day).mistakes;
-  }, [getDayProgress]);
+  const getMistakesForDay = useCallback((day: number): Mistake[] =>
+    getDayProgress(day).mistakes,
+  [getDayProgress]);
 
-  const resetProgress = useCallback(() => {
-    setProgress(defaultProgress);
-  }, []);
+  const resetProgress = useCallback(() => setProgress(defaultProgress), []);
 
   return {
     progress,
