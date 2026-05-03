@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { BookMarked, Loader2 } from 'lucide-react'
+import { BookMarked, Loader2, Trash2 } from 'lucide-react'
 import { lookupWord } from '@/lib/wordService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 
@@ -11,13 +11,13 @@ interface WordDetailSheetProps {
   onClose: () => void
   onAdd?: (word: string, entry: GlossaryEntry) => void
   onEnrich?: (word: string, entry: GlossaryEntry) => void
+  onDelete?: (word: string) => void
 }
 
-export function WordDetailSheet({ word, entry, onClose, onAdd, onEnrich }: WordDetailSheetProps) {
+export function WordDetailSheet({ word, entry, onClose, onAdd, onEnrich, onDelete }: WordDetailSheetProps) {
   const [enriched, setEnriched] = useState<GlossaryEntry | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Auto-fetch explanation when word has no explanation
   useEffect(() => {
     if (!word || !entry) { setEnriched(null); return }
     const needsFetch = !entry.explanation && !entry.explanationRu
@@ -44,8 +44,13 @@ export function WordDetailSheet({ word, entry, onClose, onAdd, onEnrich }: WordD
 
   const display = enriched ?? entry
 
+  function handleClose() {
+    onClose()
+    setEnriched(null)
+  }
+
   return (
-    <Dialog open={!!word} onOpenChange={(open) => { if (!open) { onClose(); setEnriched(null) } }}>
+    <Dialog open={!!word} onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogContent className="max-w-sm w-[92vw] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-reading text-xl font-semibold text-left">{word}</DialogTitle>
@@ -70,10 +75,6 @@ export function WordDetailSheet({ word, entry, onClose, onAdd, onEnrich }: WordD
               {display.explanationRu && (
                 <p className="text-sm text-muted-foreground leading-relaxed italic">{display.explanationRu}</p>
               )}
-              {/* Backward compat: old entries stored Russian in explanation without explanationRu */}
-              {!display.explanation && !display.explanationRu && entry.explanation && (
-                <p className="text-sm text-muted-foreground leading-relaxed">{entry.explanation}</p>
-              )}
             </div>
           )}
 
@@ -89,12 +90,23 @@ export function WordDetailSheet({ word, entry, onClose, onAdd, onEnrich }: WordD
             </div>
           )}
 
-          {onAdd && (
-            <Button className="w-full mt-2" onClick={() => { onAdd(word, display); onClose() }}>
-              <BookMarked className="w-4 h-4 mr-2" />
-              Добавить в словарь
-            </Button>
-          )}
+          <div className="flex gap-2 pt-1">
+            {onAdd && (
+              <Button className="flex-1" onClick={() => { onAdd(word, display); handleClose() }}>
+                <BookMarked className="w-4 h-4 mr-2" />
+                Добавить
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="outline"
+                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                onClick={() => { onDelete(word); handleClose() }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

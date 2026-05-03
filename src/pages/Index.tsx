@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useProgress } from '@/hooks/useProgress'
 import { Navigation, ViewMode } from '@/components/Navigation'
 import { TodayView } from '@/components/TodayView'
@@ -11,6 +11,12 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import type { DailyLesson } from '@/data/dailyContent'
 import { fetchOrGenerateLesson } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
+import {
+  getDeviceId,
+  fetchGlossaryFromSupabase,
+  upsertGlossaryWord,
+  deleteGlossaryWord,
+} from '@/lib/glossaryService'
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('today')
@@ -29,10 +35,19 @@ const Index = () => {
     addMistake,
     addToGlossary,
     addManualWord,
+    mergeGlossary,
+    deleteWord,
     getMistakesForDay,
   } = useProgress()
 
-  useEffect(() => { setTargetDay(progress.currentDay) }, [])
+  // Init: set target day + load glossary from Supabase
+  useEffect(() => {
+    setTargetDay(progress.currentDay)
+    const deviceId = getDeviceId()
+    fetchGlossaryFromSupabase(deviceId)
+      .then((remote) => mergeGlossary(remote))
+      .catch(console.error)
+  }, [])
 
   const dayProgress = getDayProgress(targetDay)
   const todayMistakes = getMistakesForDay(targetDay)
@@ -52,7 +67,7 @@ const Index = () => {
         if (!cancelled) {
           setLesson(l)
           setLoading(false)
-          if (l.text?.vocabulary) addToGlossary(l.text.vocabulary)
+          if (l.text?.vocabulary) handleAddToGlossary(l.text.vocabulary)
         }
       })
       .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false) } })
@@ -64,17 +79,44 @@ const Index = () => {
     if (currentView === 'today') setTargetDay(progress.currentDay)
   }, [currentView])
 
+  // Glossary handlers — update localStorage + sync to Supabase
+  const handleAddToGlossary = useCallback((words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]) => {
+    addToGlossary(words)
+    const deviceId = getDeviceId()
+    words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
+      const key = word.toLowerCase().trim()
+      upsertGlossaryWord(deviceId, key, { translation, explanation, explanationRu, example, exampleRu })
+        .catch(console.error)
+    })
+  }, [addToGlossary])
+
+  const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
+    addManualWord(word, entry)
+    const deviceId = getDeviceId()
+    upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { ...entry, manual: true })
+      .catch(console.error)
+  }, [addManualWord])
+
+  const handleEnrichWord = useCallback((word: string, entry: GlossaryEntry) => {
+    addToGlossary([{ word, ...entry }])
+    const deviceId = getDeviceId()
+    upsertGlossaryWord(deviceId, word.toLowerCase().trim(), entry)
+      .catch(console.error)
+  }, [addToGlossary])
+
+  const handleDeleteWord = useCallback((word: string) => {
+    deleteWord(word)
+    const deviceId = getDeviceId()
+    deleteGlossaryWord(deviceId, word.toLowerCase().trim())
+      .catch(console.error)
+  }, [deleteWord])
+
   const handleMistake = (
     taskId: string, question: string, userAnswer: string,
     correctAnswer: string, explanationRu: string
   ) => addMistake(targetDay, { taskId, question, userAnswer, correctAnswer, explanationRu })
 
   const handleNextLesson = () => setTargetDay((d) => d + 1)
-
-  // Enrich glossary entry after auto-fetch in WordDetailSheet
-  const handleEnrichWord = (word: string, entry: GlossaryEntry) => {
-    addToGlossary([{ word, ...entry }])
-  }
 
   const canGoBack = targetDay > 1
   const canGoForward = targetDay < progress.currentDay
@@ -148,8 +190,9 @@ const Index = () => {
         {currentView === 'glossary' && (
           <GlossaryView
             glossary={progress.glossary}
-            onAddWord={addManualWord}
+            onAddWord={handleAddManualWord}
             onEnrichWord={handleEnrichWord}
+            onDeleteWord={handleDeleteWord}
           />
         )}
       </main>
