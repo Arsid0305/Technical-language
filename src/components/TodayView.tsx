@@ -89,6 +89,7 @@ export function TodayView({
           onComplete={() => {}}
           onMistake={onMistake}
           onNextLesson={onNextLesson}
+          onRepeat={() => setStage('tasks')}
         />
       )}
     </div>
