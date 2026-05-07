@@ -1,116 +1,185 @@
-# Структура Google Sheets
+# Структура Google Sheets (WB Promotions)
 
-Таблица состоит из 5 листов. Листы 2–4 заполняет скрипт автоматически — **руками не трогать**.
+> Главный принцип: Excel = **интерфейс для принятия решений**, не хранилище логики.
+> Каждый лист = **один слой**. Никаких ссылок между листами в хаотичном порядке.
 
 ---
 
-## Лист 1: `unit_economics`
+## Общие правила (обязательно)
 
-> Заполняет продавец. Обновлять при изменении себестоимости или тарифов WB.
+| Правило | Почему важно |
+|---------|---------------|
+| Одна строка = один SKU | Иначе Python не сможет читать данные |
+| Нет merged cells | Мешают автоматизации |
+| Единые названия полей | Проще миграция на Python позже |
+| RAW-данные не редактируются руками | Никогда |
+| Одна формула = одна задача | Не `=ЕСЛИ(A1="";B2*C3/(D4-E5)+...` |
+| Нет ссылок `='Лист7'!G1482` | Только именованные диапазоны + VLOOKUP |
 
-| Столбец | Тип | Обязательный | Описание |
-|---------|-----|:---:|----------|
-| nmID | число | ✅ | Артикул WB (NM ID). Найти: ЛК WB → Товары |
-| vendorCode | текст | ✅ | Ваш внутренний артикул |
-| productName | текст | ✅ | Название товара (для читаемости отчётов) |
-| costPrice | число | ✅ | Себестоимость единицы (руб.) |
-| packagingCost | число | ✅ | Стоимость упаковки (руб.) |
-| deliveryToWB | число | ✅ | Доставка товара до склада WB (руб.) |
-| minMarginPercent | число | ✅ | Минимальная желаемая маржа % (например: 20) |
-| isActive | TRUE/FALSE | ✅ | TRUE — отслеживать, FALSE — игнорировать |
-| notes | текст | ❌ | Любые примечания |
-
-**Пример заполнения:**
+**Стандарт имён полей** (одинаковые на всех листах):
 ```
-nmID       | vendorCode | productName        | costPrice | packagingCost | deliveryToWB | minMarginPercent | isActive
-123456789  | ART-001    | Крем для рук 50мл  | 180       | 15            | 30           | 25               | TRUE
-987654321  | ART-002    | Маска для лица     | 95        | 10            | 30           | 30               | TRUE
+nmID | vendorCode | promoID | promoName | currentPrice | planPrice |
+promoStart | promoEnd | margin | floorPrice | targetPrice | status
 ```
 
 ---
 
-## Лист 2: `current_snapshot`
+## Лист 1: `RAW_WB`
 
-> Заполняет скрипт. Хранит историю состояний акций.
+> Данные прямо из WB API. **Руками не трогать никогда.**
+> Заполняет Python-скрипт.
 
-| Столбец | Тип | Описание |
-|---------|-----|----------|
-| snapshotDate | дата | Дата снимка (YYYY-MM-DD) |
-| nmID | число | Артикул WB |
-| currentPrice | число | Текущая цена на WB (руб.) |
-| currentDiscount | число | Текущая скидка % |
-| promoID | число / пусто | ID акции (если товар участвует) |
-| promoName | текст / пусто | Название акции |
-| promoStartDate | дата / пусто | Начало акции |
-| promoEndDate | дата / пусто | Конец акции |
-| planPrice | число / пусто | Плановая промо-цена от WB |
-| planDiscount | число / пусто | Плановая скидка от WB |
-| inAction | TRUE/FALSE | Участвует ли в акции прямо сейчас |
+| Поле | Тип | Источник |
+|-------|-----|----------|
+| nmID | число | WB API |
+| vendorCode | текст | WB API |
+| promoID | число | WB API |
+| promoName | текст | WB API |
+| promoStart | дата | WB API |
+| promoEnd | дата | WB API |
+| promoType | текст | WB API (`regular` / `auto`) |
+| currentPrice | число | WB API |
+| currentDiscount | число | WB API |
+| planPrice | число | WB API (может быть пустым для автоакций) |
+| planDiscount | число | WB API |
+| inAction | TRUE/FALSE | WB API |
+| fetchedAt | дата+время | Скрипт |
 
 ---
 
-## Лист 3: `calculated_prices`
+## Лист 2: `NORMALIZED`
 
-> Заполняет скрипт. Показывает результаты последнего расчёта.
+> Приведение данных к единому виду.
+> **Только VLOOKUP/XLOOKUP из RAW_WB.** Никаких ручных вводов.
 
-| Столбец | Тип | Описание |
-|---------|-----|----------|
-| calculatedAt | дата+время | Когда рассчитано |
-| nmID | число | Артикул WB |
-| productName | текст | Название |
-| promoName | текст | Название акции |
-| promoStartDate | дата | Начало акции |
-| promoEndDate | дата | Конец акции |
-| currentPrice | число | Текущая цена на WB |
-| minAllowedPrice | число | Минимальная цена по unit-экономике |
-| planPrice | число | Что хочет WB |
-| calculatedPromoPrice | число | Итоговая рассчитанная цена |
-| calculatedDiscount | число | Итоговая скидка % |
-| marginPercent | число | Маржа при этой цене % |
-| status | текст | **OK** / **WARNING** / **BLOCKED** |
-| blockReason | текст / пусто | Причина блокировки (если BLOCKED) |
+| Поле | Откуда |
+|-------|--------|
+| nmID | RAW_WB |
+| vendorCode | RAW_WB |
+| promoID | RAW_WB |
+| promoName | RAW_WB |
+| promoStart | RAW_WB |
+| promoEnd | RAW_WB |
+| daysLeft | Формула: `=promoEnd - TODAY()` |
+| currentPrice | RAW_WB |
+| planPrice | RAW_WB |
+| isAutoPromo | Формула: `=promoType="auto"` |
 
-**Цветовое форматирование (программист настраивает):**
+---
+
+## Лист 3: `UNIT_ECONOMICS`
+
+> **Заполняет продавец.** Обновлять при изменении себестоимости или тарифов WB.
+> Только расчёты. Никаких сведений о конкретных акциях.
+
+| Поле | Тип | Кто заполняет |
+|-------|-----|----------------|
+| nmID | число | Продавец |
+| vendorCode | текст | Продавец |
+| productName | текст | Продавец |
+| isActive | TRUE/FALSE | Продавец |
+| costPrice | число | Продавец |
+| packagingCost | число | Продавец |
+| deliveryToWB | число | Продавец |
+| wbCommission | число | Продавец (0.15 = 15%) |
+| logisticsCost | число | Продавец (актуальный тариф WB) |
+| minMarginPercent | число | Продавец |
+| totalCost | формула | `=costPrice+packagingCost+deliveryToWB+logisticsCost` |
+| floorPrice | формула | `=totalCost/(1-wbCommission)/(1-minMarginPercent/100)` |
+
+> **floorPrice** = минимально допустимая цена продажи. Ниже — убыток.
+
+---
+
+## Лист 4: `PROMO_SELECTION`
+
+> Вы **вручную** выбираете: участвует товар в акции или нет.
+> Скрипт читает столбец `selected` и включает только отмеченные товары в EXPORT.
+
+| Поле | Кто заполняет | Описание |
+|-------|----------------|----------|
+| nmID | Скрипт | Из NORMALIZED |
+| vendorCode | Скрипт | Для удобства |
+| productName | Скрипт | Для удобства |
+| promoName | Скрипт | Название акции |
+| promoEnd | Скрипт | Дата окончания |
+| planPrice | Скрипт | Что хочет WB |
+| floorPrice | Скрипт | VLOOKUP из UNIT_ECONOMICS |
+| targetPrice | Скрипт | `=MAX(planPrice, floorPrice)` |
+| marginAtTarget | Скрипт | Расчётная маржа % |
+| **selected** | **Вы** | **TRUE/FALSE — участвует в акции?** |
+| notes | Вы | Любые комментарии |
+
+---
+
+## Лист 5: `VALIDATION`
+
+> Автоматические проверки. **Ваш финальный фильтр** перед експортом.
+> Если status = BLOCKED — товар не попадает в EXPORT.
+
+| Поле | Описание |
+|-------|----------|
+| nmID | Копия из PROMO_SELECTION |
+| targetPrice | Копия |
+| V001_priceNotEmpty | `=targetPrice>0` |
+| V002_aboveFloor | `=targetPrice>=floorPrice` |
+| V003_noQuarantine | `=targetPrice>=currentPrice/3` |
+| V004_marginPositive | `=marginAtTarget>=0` |
+| V005_marginWarning | `=marginAtTarget>=minMarginPercent` |
+| V006_discountLimit | `=discount<=95` |
+| **status** | `=ЕСЛИ(НЕ(V001)*НЕ(V002)*НЕ(V003)*Не(V004)*НЕ(V006);"BLOCKED";ЕСЛИ(НЕ(V005);"WARNING";"OK"))` |
+| blockReason | Причина блокировки |
+
+**Коды статусов:**
 - `OK` — зелёный фон
-- `WARNING` — жёлтый фон
-- `BLOCKED` — красный фон
+- `WARNING` — жёлтый фон (маржа ниже желаемой, но выше нуля)
+- `BLOCKED` — красный фон, в EXPORT не попадает
 
 ---
 
-## Лист 4: `event_log`
+## Лист 6: `EXPORT`
 
-> Журнал всех событий. Не редактировать.
+> Готовый шаблон для загрузки на WB.
+> **Независим от остальных листов.** Только товары со статусом OK или WARNING и где selected=TRUE.
 
-| Столбец | Тип | Описание |
-|---------|-----|----------|
-| timestamp | дата+время | Время события |
-| eventType | текст | Тип события (см. ниже) |
-| promoID | число | ID акции |
-| promoName | текст | Название акции |
-| nmID | число / пусто | Артикул (если событие по конкретному товару) |
-| description | текст | Человекочитаемое описание |
+| Поле | Описание |
+|-------|----------|
+| nmID | Артикул WB |
+| targetPrice | Итоговая цена |
+| discount | Скидка % |
 
-**Типы событий:**
-```
-NEW_PROMO           — обнаружена новая акция
-PROMO_ENDING        — акция заканчивается через ≤3 дня
-PROMO_ENDED         — акция завершилась
-SKU_DROPPED         — товар выпал из акции
-PRICE_BLOCKED       — цена заблокирована валидацией
-AUTO_PROMO_DETECTED — обнаружена автоакция WB
-API_ERROR           — ошибка при обращении к WB API
-```
+> Именно этот лист Python-скрипт преобразует в `.xlsx` и отправляет в Telegram.
 
 ---
 
-## Лист 5: `settings`
+## Лист 7: `EVENT_LOG`
 
-> Системные настройки. Программист заполняет при первичной настройке.
+> Журнал. Не редактировать. Заполняет скрипт.
 
-| Ключ | Значение по умолчанию | Описание |
-|------|-----------------------|----------|
-| last_run_date | — | Дата последнего успешного запуска |
-| days_before_ending_alert | 3 | За сколько дней предупреждать об окончании акции |
-| promo_lookahead_days | 30 | На сколько дней вперёд смотреть акции |
-| wb_commission | 0.15 | Комиссия WB для вашей категории (доля, не %) |
-| logistics_cost | 100 | Стоимость логистики WB (руб., уточнить в тарифах WB) |
+| Поле | Описание |
+|-------|----------|
+| timestamp | Дата и время |
+| eventType | NEW_PROMO / PROMO_ENDING / PRICE_BLOCKED / AUTO_PROMO_DETECTED / API_ERROR |
+| nmID | Артикул |
+| promoName | Название акции |
+| description | Описание |
+
+---
+
+## Поток данных через листы
+
+```
+WB API → RAW_WB          (только запись, нет чтения)
+          ↓
+       NORMALIZED          (VLOOKUP из RAW_WB, нормализация)
+          ↓
+    UNIT_ECONOMICS         (ваша себестоимость, расчёт floorPrice)
+          ↓
+   PROMO_SELECTION         (вы выбираете selected=TRUE/FALSE)
+          ↓
+      VALIDATION           (автопроверка: OK / WARNING / BLOCKED)
+          ↓
+        EXPORT             (только OK+WARNING+selected → nmID|price|discount)
+          ↓
+  Python → .xlsx → Telegram → вы → вручная загрузка на WB
+```
