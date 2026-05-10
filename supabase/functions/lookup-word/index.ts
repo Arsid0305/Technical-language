@@ -1,9 +1,21 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+  'https://technical-language.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') ?? ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -47,7 +59,6 @@ Return ONLY a JSON object, no markdown:
     const data = await res.json()
     const result = JSON.parse(data.choices[0].message.content)
 
-    // Ensure word is always lowercase English
     result.word = (result.word as string).toLowerCase().trim()
 
     return new Response(JSON.stringify(result), {
@@ -56,7 +67,7 @@ Return ONLY a JSON object, no markdown:
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     })
   }
 })

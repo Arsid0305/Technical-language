@@ -1,6 +1,16 @@
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const ALLOWED_ORIGINS = [
+  'https://technical-language.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+]
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get('origin') ?? ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
@@ -46,6 +56,8 @@ const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
 ]
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -79,7 +91,7 @@ Deno.serve(async (req) => {
 
     const isBeginnerLesson = topic.beginner === true
 
-    const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}` 
+    const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}`
 
     const prompt = isBeginnerLesson
       ? `You are creating English vocabulary lessons for a Russian beginner developer. She uses these words in Russian daily but wants to recognise them in technical English.
@@ -174,7 +186,7 @@ Requirements:
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     })
   }
 })
