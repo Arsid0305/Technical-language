@@ -231,11 +231,13 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
   const findTranslation = useCallback((text: string): string | null => {
     const normalizedText = text.toLowerCase().trim();
     
-    // Check vocabulary first
-    const vocabMatch = vocabulary.find(
-      (v) => v.word.toLowerCase() === normalizedText ||
-             normalizedText.includes(v.word.toLowerCase())
-    );
+    // Check vocabulary first — exact match or whole-word boundary match
+    const vocabMatch = vocabulary.find((v) => {
+      const vw = v.word.toLowerCase()
+      if (vw === normalizedText) return true
+      const escaped = vw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return new RegExp(`\\b${escaped}\\b`).test(normalizedText)
+    })
     if (vocabMatch) return vocabMatch.translation;
     
     // Check common translations
