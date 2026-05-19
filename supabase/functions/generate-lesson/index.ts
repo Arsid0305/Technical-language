@@ -157,9 +157,13 @@ Requirements:
 - consolidation: exactly 3 questions
 - All questions English, all explanationRu Russian`
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 45000)
+
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -167,6 +171,8 @@ Requirements:
         response_format: { type: 'json_object' },
       }),
     })
+
+    clearTimeout(timeout)
 
     if (!openaiRes.ok) {
       const err = await openaiRes.json().catch(() => ({}))
