@@ -43,6 +43,24 @@ const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   { title: 'GitHub Actions: Secrets and Deploy Workflows', detail: 'adding GitHub Secrets; using secrets in yml with ${{ secrets.NAME }}; deploying to Vercel and Supabase via Actions; workflow triggers on path changes; reading action logs' },
   { title: 'TypeScript Advanced: Generics and Utility Types', detail: 'what generics solve; writing a generic function; generic React components; built-in utility types: Partial, Omit, Pick, ReturnType, Record; the satisfies operator' },
   { title: 'React Advanced: Custom Hooks and useCallback', detail: 'extracting reusable logic into custom hooks; naming convention use*; when useCallback prevents unnecessary re-renders; when NOT to over-optimize; React.memo basics' },
+
+  // ── AI_OS / VIBE CODING WORKFLOW ──────────────────────────────────────────
+  { title: 'Claude Code: Branches, Automerge, and CLAUDE.md', detail: 'claude/* branch naming; CLAUDE.md adapter file; automerge.yml workflow; "push to branch, CI merges to main"; subagent; haiku vs sonnet vs opus model; BIG task vs SMALL task; "разрабатывать на ветке claude/..., никогда не пушить напрямую в main"' },
+  { title: 'Reading a Code Audit Report', detail: 'severity (critical / high / medium / low / info); root cause; consequence; recommended fix; confidence; "this will silently fail when…"; "the pattern X is vulnerable because…"; findings grouped by category (security / architecture / performance / code quality)' },
+  { title: 'Vercel: Build Logs and Deployment Errors', detail: '"Build failed"; "Deployment ready"; "Error: Cannot find module"; preview deployment; production deployment; build minutes; install command; build command; environment variable; "Function Logs" in Vercel dashboard; redeploy; rollback deployment' },
+  { title: 'GitHub Actions: Reading CI Workflow Logs', detail: 'workflow trigger (push / pull_request); job; step; runner; "Run npm ci"; "Process completed with exit code 1"; "Run npm run build"; workflow badge; re-run failed jobs; reading step output; "Error: …" vs "Warning: …"' },
+  { title: 'TypeScript Compiler Errors: Decoding the Messages', detail: 'Type \'X\' is not assignable to type \'Y\'; Property \'X\' does not exist on type \'Y\'; Argument of type \'X\' is not assignable to parameter; Object is possibly \'undefined\'; Cannot find name \'X\'; strict null checks; ts(2345) / ts(2339)' },
+  { title: 'Supabase Edge Functions: Deploy Logs and Runtime', detail: '"Function deployed successfully"; "Function failed to deploy"; Deno.env.get; CORS headers; cold start; service role key vs anon key; "Unhandled error"; AbortController timeout; response status 503; "Invalid JSON"' },
+  { title: 'Supabase Dashboard: SQL Editor and Migrations', detail: 'SQL editor; migration file; ALTER TABLE; CREATE INDEX; RLS — Row Level Security; CREATE POLICY; USING (auth.uid() = user_id); WITH CHECK; supabase db push; "migration applied"; table editor; foreign key; transaction; rollback' },
+  { title: 'Git Submodules: Design System Workflow', detail: 'git submodule; .gitmodules file; git submodule update --init; git submodule update --remote; detached HEAD in submodule; parent repository; nested repository; submodule path; "preview/" folder; "changes not staged for commit" in submodule' },
+  { title: 'Cursor IDE: AI-Powered Coding Workflow', detail: 'Cursor IDE; Composer (multi-file AI edit); inline edit (Cmd+K); Accept suggestion (Tab); Reject (Esc); chat panel; @file mention; @codebase; diff view; .cursorrules file; Apply; "generating…"; context window in Cursor' },
+  { title: 'Conventional Commits: Reading Your Git History', detail: 'feat: / fix: / chore: / refactor: / docs: / test: / build:; scope in parentheses — feat(auth):; BREAKING CHANGE:; commit SHA; git log --oneline; git blame; co-authored-by; "squash and merge"; semantic versioning (v1.2.3)' },
+  { title: 'Telegram Bot API: WB_Bot Context', detail: 'bot token; BotFather; /setwebhook; getUpdates (polling); sendMessage; chat_id; message object; update; inline keyboard; callback_query; reply_markup; parse_mode (Markdown/HTML); bot username (@my_bot); "Forbidden: bot was blocked by the user"' },
+  { title: 'Wildberries API: Marketplace Vocabulary', detail: 'marketplace; SKU (Stock Keeping Unit); barcode; warehouse; supply; listing; commission; FBO vs FBS (Fulfilled by Operator / by Seller); nomenclature (номенклатура); seller cabinet; analytics; stock; shipment; rate limit; API key' },
+  { title: 'Movie Database API: kino-app Context', detail: 'TMDB (The Movie Database); query params (?query=…&page=1); pagination; genre; cast; rating; overview; release date; poster path; bearer token; "No results found"; search endpoint (/search/movie); similar movies; watchlist; IMDb ID' },
+  { title: 'AI Prompting: System Messages and Context', detail: 'prompt; system message; user message; context window; temperature; token; "Return ONLY JSON"; few-shot example; chain-of-thought; hallucination; grounding; "You are a…"; task decomposition; response_format; role: "user" / "assistant" / "system"' },
+  { title: 'React Error Messages: What They Really Mean', detail: '"Each child in a list should have a unique key prop"; "Cannot update a component while rendering a different component"; "React Hook is called conditionally"; "Too many re-renders"; "Can\'t perform a React state update on an unmounted component"; StrictMode double-invoke' },
+  { title: 'Skincare Ingredient Vocabulary (English)', detail: 'ingredient; formula; routine (skincare routine); moisturiser; serum; toner; SPF / sunscreen; retinol; hyaluronic acid; niacinamide; exfoliant; AHA/BHA; skin type (oily / dry / combination / sensitive); skin concern; patch test; INCI name' },
 ]
 
 Deno.serve(async (req) => {
@@ -142,7 +160,7 @@ Return ONLY JSON:
     "focus": "What reading skill this lesson builds (English)",
     "focusRu": "То же по-русски",
     "title": "Lesson title",
-    "content": "320–400 words. Natural dev English. Real commands, error phrasing, real doc patterns.",
+    "content": "320–400 words. Natural dev English. Format to match the topic — e.g. a GitHub PR description with review thread, a CI workflow run log with step output, a Vercel build failure, TypeScript compiler errors in a code diff, a Supabase Edge Function with comments, a Telegram Bot API handler, a Claude Code audit section, a Conventional Commits git log. Pick the format that makes the vocabulary feel real and immediately recognisable.",
     "vocabulary": [${vocabItem}]
   },
   "tasks": [{"id": "t${lessonNumber}-1", "type": "meaning", "question": "Comprehension question", "options": ["A","B","C","D"], "correctIndex": 0, "explanationRu": "По-русски"}],

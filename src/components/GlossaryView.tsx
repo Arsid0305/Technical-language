@@ -81,7 +81,7 @@ export function GlossaryView({ glossary, onAddWord, onEnrichWord, onDeleteWord }
         <p className="text-sm text-muted-foreground mt-1">
           {total === 0
             ? 'Слова появятся после первого урока'
-            : `${total} ${wordForm(total)} в словаре`}
+            : `${total} ${wordForm(total)} в словаре`}
         </p>
       </div>
 
