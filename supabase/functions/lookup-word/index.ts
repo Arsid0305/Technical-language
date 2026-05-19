@@ -9,12 +9,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { word } = await req.json()
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')!
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openaiKey) {
+      return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
+
+    const body = await req.json().catch(() => null)
+    if (!body) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders })
+    }
+
+    const word = body.word
+    if (!word || typeof word !== 'string' || word.trim().length === 0) {
+      return new Response(JSON.stringify({ error: 'Invalid word' }), { status: 400, headers: corsHeaders })
+    }
+
+    const sanitizedWord = word.trim().slice(0, 100)
 
     const prompt = `You are a bilingual technical English dictionary for Russian developers.
 
-The user searched for: "${word}"
+The user searched for: ${JSON.stringify(sanitizedWord)}
 
 This may be in Russian or English. Your job:
 1. Identify the correct ENGLISH technical term (even if the input is in Russian, e.g. "стек" → "stack", "деплой" → "deploy")
@@ -44,10 +58,19 @@ Return ONLY a JSON object, no markdown:
       }),
     })
 
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`OpenAI error ${res.status}: ${err.error?.message ?? 'unknown'}`)
+    }
+
     const data = await res.json()
+
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Empty response from OpenAI')
+    }
+
     const result = JSON.parse(data.choices[0].message.content)
 
-    // Ensure word is always lowercase English
     result.word = (result.word as string).toLowerCase().trim()
 
     return new Response(JSON.stringify(result), {

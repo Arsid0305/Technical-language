@@ -51,10 +51,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lessonNumber, mistakeCount = 0 } = await req.json()
+    const body = await req.json().catch(() => null)
+    if (!body) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders })
+    }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const lessonNumber = Number(body.lessonNumber)
+    const mistakeCount = Number(body.mistakeCount ?? 0)
+
+    if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 10000) {
+      return new Response(JSON.stringify({ error: 'Invalid lessonNumber' }), { status: 400, headers: corsHeaders })
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
+
+    if (!supabaseUrl || !serviceKey || !openaiKey) {
+      return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
 
     const existingRes = await fetch(
       `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
@@ -68,7 +83,6 @@ Deno.serve(async (req) => {
     }
 
     const topic = TOPICS[(lessonNumber - 1) % TOPICS.length]
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')!
 
     const difficultyHint =
       mistakeCount > 3
