@@ -5,7 +5,8 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export async function fetchOrGenerateLesson(
   lessonNumber: number,
-  mistakeCount = 0
+  mistakeCount = 0,
+  force = false
 ): Promise<DailyLesson> {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-lesson`, {
     method: 'POST',
@@ -14,7 +15,7 @@ export async function fetchOrGenerateLesson(
       apikey: SUPABASE_ANON_KEY,
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ lessonNumber, mistakeCount }),
+    body: JSON.stringify({ lessonNumber, mistakeCount, force }),
   });
 
   if (!res.ok) {
