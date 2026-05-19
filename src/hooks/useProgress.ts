@@ -82,6 +82,7 @@ export function useProgress() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
     } catch (e) {
       console.error('Failed to save progress:', e)
+      window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
     }
   }, [progress])
 
