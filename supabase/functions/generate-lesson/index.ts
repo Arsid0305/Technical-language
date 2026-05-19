@@ -154,8 +154,27 @@ Requirements:
       }),
     })
 
+    if (!openaiRes.ok) {
+      const err = await openaiRes.json().catch(() => ({}))
+      throw new Error(`OpenAI error ${openaiRes.status}: ${err.error?.message ?? 'unknown'}`)
+    }
+
     const openaiData = await openaiRes.json()
+
+    if (!openaiData.choices?.[0]?.message?.content) {
+      throw new Error('Empty response from OpenAI')
+    }
+
     const lessonContent = JSON.parse(openaiData.choices[0].message.content)
+
+    if (
+      !lessonContent.text?.content ||
+      !lessonContent.text?.vocabulary?.length ||
+      !Array.isArray(lessonContent.tasks) || lessonContent.tasks.length < 1 ||
+      !Array.isArray(lessonContent.consolidation) || lessonContent.consolidation.length < 1
+    ) {
+      throw new Error('Invalid lesson structure from AI')
+    }
 
     await fetch(`${supabaseUrl}/rest/v1/lessons`, {
       method: 'POST',
