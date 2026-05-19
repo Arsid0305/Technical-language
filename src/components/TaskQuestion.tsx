@@ -46,6 +46,14 @@ export function TaskQuestion({ task, onAnswer, showSoftPass = true }: TaskQuesti
     }
   };
 
+  if (task.type === 'meaning' && (!task.options || task.options.length === 0)) {
+    return (
+      <div className="p-4 rounded-lg bg-muted border border-border text-sm text-muted-foreground">
+        Вопрос загрузился без вариантов ответа. Перегенерируй урок кнопкой ↺.
+      </div>
+    )
+  }
+
   if (task.type === 'reflection') {
     return (
       <div className="space-y-4 animate-fade-in">

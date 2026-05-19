@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useProgress } from '@/hooks/useProgress'
 import { Navigation, ViewMode } from '@/components/Navigation'
 import { TodayView } from '@/components/TodayView'
@@ -8,7 +8,7 @@ import { ProgressView } from '@/components/ProgressView'
 import { MistakesView } from '@/components/MistakesView'
 import { GlossaryView } from '@/components/GlossaryView'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { fetchOrGenerateLesson } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 import {
@@ -22,6 +22,8 @@ import { toast } from 'sonner'
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('today')
   const [targetDay, setTargetDay] = useState(1)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const queryClient = useQueryClient()
 
   const {
     progress,
@@ -47,6 +49,7 @@ const Index = () => {
   }, [])
 
   // Init: set target day + load glossary from Supabase
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setTargetDay(progress.currentDay)
     fetchGlossaryFromSupabase(getDeviceId())
@@ -80,11 +83,11 @@ const Index = () => {
   // Add lesson vocabulary to glossary when lesson loads
   useEffect(() => {
     if (lesson?.text?.vocabulary) handleAddToGlossary(lesson.text.vocabulary)
-  }, [lesson])
+  }, [lesson, handleAddToGlossary])
 
   useEffect(() => {
     if (currentView === 'today') setTargetDay(progress.currentDay)
-  }, [currentView])
+  }, [currentView, progress.currentDay])
 
   const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
     addManualWord(word, entry)
@@ -115,6 +118,18 @@ const Index = () => {
   ) => addMistake(targetDay, { taskId, question, userAnswer, correctAnswer, explanationRu })
 
   const handleNextLesson = () => setTargetDay((d) => d + 1)
+
+  const handleRegenerate = useCallback(async () => {
+    setIsRegenerating(true)
+    try {
+      const fresh = await fetchOrGenerateLesson(targetDay, prevMistakeCount, true)
+      queryClient.setQueryData(['lesson', targetDay], fresh)
+    } catch {
+      toast.error('Не удалось перегенерировать урок')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }, [targetDay, prevMistakeCount, queryClient])
 
   const dayProgress = getDayProgress(targetDay)
   const todayMistakes = getMistakesForDay(targetDay)
@@ -159,7 +174,20 @@ const Index = () => {
             <Button variant="ghost" size="sm" onClick={() => setTargetDay((d) => Math.max(1, d - 1))} disabled={!canGoBack}>
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-muted-foreground">Урок {targetDay}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-muted-foreground">Урок {targetDay}</span>
+              <Button
+                variant="ghost" size="sm"
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="h-6 w-6 p-0 text-muted-foreground/40 hover:text-muted-foreground"
+                title="Перегенерировать урок"
+              >
+                {isRegenerating
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <RefreshCw className="w-3 h-3" />}
+              </Button>
+            </div>
             <Button variant="ghost" size="sm" onClick={() => setTargetDay((d) => Math.min(progress.currentDay, d + 1))} disabled={!canGoForward}>
               <ChevronRight className="w-4 h-4" />
             </Button>

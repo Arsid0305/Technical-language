@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
 
     const lessonNumber = Number(body.lessonNumber)
     const mistakeCount = Number(body.mistakeCount ?? 0)
+    const force = body.force === true
 
     if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 10000) {
       return new Response(JSON.stringify({ error: 'Invalid lessonNumber' }), { status: 400, headers: corsHeaders })
@@ -90,15 +91,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
     }
 
-    const existingRes = await fetch(
-      `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
-      { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
-    )
-    const existing = await existingRes.json()
-    if (existing.length > 0) {
-      return new Response(JSON.stringify(existing[0].content), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    if (!force) {
+      const existingRes = await fetch(
+        `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+      )
+      const existing = await existingRes.json()
+      if (existing.length > 0) {
+        return new Response(JSON.stringify(existing[0].content), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     const topic = TOPICS[(lessonNumber - 1) % TOPICS.length]
@@ -221,7 +224,7 @@ Requirements:
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
       },
       body: JSON.stringify({ lesson_number: lessonNumber, content: lessonContent }),
     })
