@@ -17,6 +17,7 @@ import {
   upsertGlossaryWord,
   deleteGlossaryWord,
 } from '@/lib/glossaryService'
+import { toast } from 'sonner'
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('today')
@@ -39,6 +40,14 @@ const Index = () => {
     deleteWord,
     getMistakesForDay,
   } = useProgress()
+
+  useEffect(() => {
+    const handleStorageError = () => {
+      toast.error('Память браузера заполнена — прогресс не сохраняется', { duration: 8000 })
+    }
+    window.addEventListener('storage-quota-exceeded', handleStorageError)
+    return () => window.removeEventListener('storage-quota-exceeded', handleStorageError)
+  }, [])
 
   // Init: set target day + load glossary from Supabase
   useEffect(() => {
