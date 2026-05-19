@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useProgress } from '@/hooks/useProgress'
 import { Navigation, ViewMode } from '@/components/Navigation'
 import { TodayView } from '@/components/TodayView'
@@ -8,7 +9,6 @@ import { MistakesView } from '@/components/MistakesView'
 import { GlossaryView } from '@/components/GlossaryView'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
-import type { DailyLesson } from '@/data/dailyContent'
 import { fetchOrGenerateLesson } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 import {
@@ -22,9 +22,6 @@ import { toast } from 'sonner'
 const Index = () => {
   const [currentView, setCurrentView] = useState<ViewMode>('today')
   const [targetDay, setTargetDay] = useState(1)
-  const [lesson, setLesson] = useState<DailyLesson | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   const {
     progress,
@@ -52,70 +49,58 @@ const Index = () => {
   // Init: set target day + load glossary from Supabase
   useEffect(() => {
     setTargetDay(progress.currentDay)
-    const deviceId = getDeviceId()
-    fetchGlossaryFromSupabase(deviceId)
+    fetchGlossaryFromSupabase(getDeviceId())
       .then((remote) => mergeGlossary(remote))
       .catch(console.error)
   }, [])
 
-  const dayProgress = getDayProgress(targetDay)
-  const todayMistakes = getMistakesForDay(targetDay)
+  const prevMistakeCount = targetDay > 1
+    ? (progress.days[targetDay - 1]?.mistakes?.length ?? 0)
+    : 0
 
+  const { data: lesson, isLoading, error, refetch } = useQuery({
+    queryKey: ['lesson', targetDay],
+    queryFn: () => fetchOrGenerateLesson(targetDay, prevMistakeCount),
+    staleTime: Infinity,
+    retry: 2,
+    gcTime: 1000 * 60 * 60,
+  })
+
+  const handleAddToGlossary = useCallback((
+    words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]
+  ) => {
+    addToGlossary(words)
+    const deviceId = getDeviceId()
+    words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
+      upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { translation, explanation, explanationRu, example, exampleRu })
+        .catch(console.error)
+    })
+  }, [addToGlossary])
+
+  // Add lesson vocabulary to glossary when lesson loads
   useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setLesson(null)
-
-    const prevMistakeCount = targetDay > 1
-      ? (progress.days[targetDay - 1]?.mistakes?.length ?? 0)
-      : 0
-
-    fetchOrGenerateLesson(targetDay, prevMistakeCount)
-      .then((l) => {
-        if (!cancelled) {
-          setLesson(l)
-          setLoading(false)
-          if (l.text?.vocabulary) handleAddToGlossary(l.text.vocabulary)
-        }
-      })
-      .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false) } })
-
-    return () => { cancelled = true }
-  }, [targetDay])
+    if (lesson?.text?.vocabulary) handleAddToGlossary(lesson.text.vocabulary)
+  }, [lesson])
 
   useEffect(() => {
     if (currentView === 'today') setTargetDay(progress.currentDay)
   }, [currentView])
 
-  const handleAddToGlossary = useCallback((words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]) => {
-    addToGlossary(words)
-    const deviceId = getDeviceId()
-    words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
-      const key = word.toLowerCase().trim()
-      upsertGlossaryWord(deviceId, key, { translation, explanation, explanationRu, example, exampleRu })
-        .catch(console.error)
-    })
-  }, [addToGlossary])
-
   const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
     addManualWord(word, entry)
-    const deviceId = getDeviceId()
-    upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { ...entry, manual: true })
+    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), { ...entry, manual: true })
       .catch(console.error)
   }, [addManualWord])
 
   const handleEnrichWord = useCallback((word: string, entry: GlossaryEntry) => {
     addToGlossary([{ word, ...entry }])
-    const deviceId = getDeviceId()
-    upsertGlossaryWord(deviceId, word.toLowerCase().trim(), entry)
+    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), entry)
       .catch(console.error)
   }, [addToGlossary])
 
   const handleDeleteWord = useCallback((word: string) => {
     deleteWord(word)
-    const deviceId = getDeviceId()
-    deleteGlossaryWord(deviceId, word.toLowerCase().trim())
+    deleteGlossaryWord(getDeviceId(), word.toLowerCase().trim())
       .catch(console.error)
   }, [deleteWord])
 
@@ -131,10 +116,12 @@ const Index = () => {
 
   const handleNextLesson = () => setTargetDay((d) => d + 1)
 
+  const dayProgress = getDayProgress(targetDay)
+  const todayMistakes = getMistakesForDay(targetDay)
   const canGoBack = targetDay > 1
   const canGoForward = targetDay < progress.currentDay
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-reading-bg flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -153,8 +140,8 @@ const Index = () => {
       <div className="min-h-screen bg-reading-bg flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
           <p className="text-destructive font-medium">Не удалось загрузить урок</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button onClick={() => window.location.reload()}>Попробовать снова</Button>
+          <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+          <Button onClick={() => refetch()}>Попробовать снова</Button>
         </div>
       </div>
     )
@@ -200,10 +187,7 @@ const Index = () => {
         )}
         {currentView === 'mistakes' && <MistakesView mistakes={todayMistakes} day={targetDay} />}
         {currentView === 'progress' && (
-          <ProgressView
-            progress={progress}
-            onSelectLesson={handleSelectLesson}
-          />
+          <ProgressView progress={progress} onSelectLesson={handleSelectLesson} />
         )}
         {currentView === 'glossary' && (
           <GlossaryView
