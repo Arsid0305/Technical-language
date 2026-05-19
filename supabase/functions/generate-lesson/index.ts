@@ -61,6 +61,7 @@ const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   { title: 'AI Prompting: System Messages and Context', detail: 'prompt; system message; user message; context window; temperature; token; "Return ONLY JSON"; few-shot example; chain-of-thought; hallucination; grounding; "You are a…"; task decomposition; response_format; role: "user" / "assistant" / "system"' },
   { title: 'React Error Messages: What They Really Mean', detail: '"Each child in a list should have a unique key prop"; "Cannot update a component while rendering a different component"; "React Hook is called conditionally"; "Too many re-renders"; "Can\'t perform a React state update on an unmounted component"; StrictMode double-invoke' },
   { title: 'Skincare Ingredient Vocabulary (English)', detail: 'ingredient; formula; routine (skincare routine); moisturiser; serum; toner; SPF / sunscreen; retinol; hyaluronic acid; niacinamide; exfoliant; AHA/BHA; skin type (oily / dry / combination / sensitive); skin concern; patch test; INCI name' },
+  { title: 'Tavily: AI Search and Web Extraction API', detail: 'Tavily Search API; search query; search_depth (basic / advanced); include_answer; include_raw_content; max_results; tavily_search vs tavily_extract vs tavily_crawl vs tavily_research; MCP tool; API key; results array; url / title / content / score fields; grounding AI responses with web results' },
 ]
 
 Deno.serve(async (req) => {
