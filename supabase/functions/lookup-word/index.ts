@@ -44,12 +44,16 @@ Return ONLY a JSON object, no markdown:
   "exampleRu": "Перевод примера на русский."
 }`
 
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30000)
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${openaiKey}`,
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
@@ -57,6 +61,8 @@ Return ONLY a JSON object, no markdown:
         response_format: { type: 'json_object' },
       }),
     })
+
+    clearTimeout(timeout)
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
