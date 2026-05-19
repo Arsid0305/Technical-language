@@ -93,14 +93,13 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 ## Рабочий процесс
 
-Схема: `ветки` → `dev` (авто) → `main` (после билда) → Vercel
+Схема: `ветки` → `main` (после билда) → Vercel
 
 1. Claude пишет код → пушит в ветку `claude/...`
-2. `automerge.yml` мержит ветку в `dev` автоматически
-3. `promote.yml` мержит `dev` → `main` после успешного билда
-4. Vercel деплоит фронтенд (1-2 мин)
-5. GitHub Actions деплоит Edge Functions (1-2 мин)
-6. Тестируем на проде
+2. `automerge.yml` делает `npm ci` + `npm run build`, затем мержит ветку в `main`
+3. Vercel деплоит фронтенд (1-2 мин)
+4. GitHub Actions деплоит Edge Functions (1-2 мин)
+5. Тестируем на проде
 
 ---
 
