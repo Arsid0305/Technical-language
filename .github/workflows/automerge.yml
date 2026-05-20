@@ -2,8 +2,9 @@ name: Auto-merge feature branches
 
 on:
   push:
-    branches-ignore:
-      - main
+    branches:
+      - 'claude/**'
+      - 'cursor/**'
 
 permissions:
   contents: write
@@ -33,11 +34,18 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Merge into main
+      - name: Check for merge conflicts
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git checkout main
-          git pull origin main
-          git merge --no-ff ${{ github.ref_name }} -m "Auto-merge ${{ github.ref_name }} into main"
+          git fetch origin main
+          git checkout -B main origin/main
+          git merge --no-commit --no-ff origin/${{ github.ref_name }} \
+            || { git merge --abort; echo "::error::Merge conflict in ${{ github.ref_name }}"; exit 1; }
+          git merge --abort 2>/dev/null || true
+
+      - name: Merge into main
+        run: |
+          git checkout -B main origin/main
+          git merge --no-ff origin/${{ github.ref_name }} -m "Auto-merge ${{ github.ref_name }} into main"
           git push origin main
