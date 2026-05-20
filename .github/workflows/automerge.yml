@@ -49,3 +49,6 @@ jobs:
           git checkout -B main origin/main
           git merge --no-ff origin/${{ github.ref_name }} -m "Auto-merge ${{ github.ref_name }} into main"
           git push origin main
+
+      - name: Delete merged branch
+        run: git push origin --delete "${{ github.ref_name }}"
