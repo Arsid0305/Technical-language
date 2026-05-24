@@ -11,6 +11,42 @@ function getCorsHeaders(req: Request): Record<string, string> {
   }
 }
 
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown'
+  return forwarded.split(',')[0].trim()
+}
+
+async function checkRateLimit(
+  supabaseUrl: string,
+  serviceKey: string,
+  req: Request,
+  fnName: string,
+  limitPerHour: number
+): Promise<boolean> {
+  const ip = getClientIp(req)
+  const now = new Date()
+  now.setMinutes(0, 0, 0, 0)
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_rate_limit`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_key: `${fnName}:${ip}`,
+        p_window: now.toISOString(),
+        p_limit: limitPerHour,
+      }),
+    })
+    if (!res.ok) return true
+    return await res.json() as boolean
+  } catch {
+    return true
+  }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
@@ -20,8 +56,21 @@ Deno.serve(async (req) => {
 
   try {
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
     if (!openaiKey) {
       return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
+
+    if (supabaseUrl && serviceKey) {
+      const allowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'lookup-word', 50)
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Try again in an hour.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' } }
+        )
+      }
     }
 
     const body = await req.json().catch(() => null)

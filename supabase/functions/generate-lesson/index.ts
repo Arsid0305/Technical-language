@@ -11,6 +11,42 @@ function getCorsHeaders(req: Request): Record<string, string> {
   }
 }
 
+function getClientIp(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown'
+  return forwarded.split(',')[0].trim()
+}
+
+async function checkRateLimit(
+  supabaseUrl: string,
+  serviceKey: string,
+  req: Request,
+  fnName: string,
+  limitPerHour: number
+): Promise<boolean> {
+  const ip = getClientIp(req)
+  const now = new Date()
+  now.setMinutes(0, 0, 0, 0)
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/check_rate_limit`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        p_key: `${fnName}:${ip}`,
+        p_window: now.toISOString(),
+        p_limit: limitPerHour,
+      }),
+    })
+    if (!res.ok) return true
+    return await res.json() as boolean
+  } catch {
+    return true
+  }
+}
+
 const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   // ── BEGINNER VOCABULARY (lessons 1–8) ──────────────────────────────────────
   { beginner: true, title: 'Bug, Fix, Script, Run: Your First Dev Words', detail: 'bug (ошибка в коде), fix (исправить), script (файл с кодом для запуска), run / execute (запустить), error (ошибка), output (что напечатала программа), crash (упало), log (запись в консоли).' },
@@ -80,6 +116,22 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const openaiKey = Deno.env.get('OPENAI_API_KEY')
+
+    if (!supabaseUrl || !serviceKey || !openaiKey) {
+      return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
+
+    const allowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'generate-lesson', 20)
+    if (!allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Try again in an hour.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' } }
+      )
+    }
+
     const body = await req.json().catch(() => null)
     if (!body) {
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: corsHeaders })
@@ -91,14 +143,6 @@ Deno.serve(async (req) => {
 
     if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 10000) {
       return new Response(JSON.stringify({ error: 'Invalid lessonNumber' }), { status: 400, headers: corsHeaders })
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const openaiKey = Deno.env.get('OPENAI_API_KEY')
-
-    if (!supabaseUrl || !serviceKey || !openaiKey) {
-      return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
     }
 
     if (!force) {
