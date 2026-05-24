@@ -11,6 +11,20 @@ function getCorsHeaders(req: Request): Record<string, string> {
   }
 }
 
+async function verifyJWT(supabaseUrl: string, anonKey: string, req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization')
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 function getClientIp(req: Request): string {
   const forwarded = req.headers.get('x-forwarded-for') ?? req.headers.get('cf-connecting-ip') ?? 'unknown'
   return forwarded.split(',')[0].trim()
@@ -118,10 +132,19 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
 
     if (!supabaseUrl || !serviceKey || !openaiKey) {
       return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
+
+    const authed = await verifyJWT(supabaseUrl, anonKey, req)
+    if (!authed) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const allowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'generate-lesson', 20)

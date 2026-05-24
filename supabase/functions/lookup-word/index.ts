@@ -47,6 +47,20 @@ async function checkRateLimit(
   }
 }
 
+async function verifyJWT(supabaseUrl: string, anonKey: string, req: Request): Promise<boolean> {
+  const auth = req.headers.get('Authorization')
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null
+  if (!token) return false
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
 
@@ -58,12 +72,21 @@ Deno.serve(async (req) => {
     const openaiKey = Deno.env.get('OPENAI_API_KEY')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
-    if (!openaiKey) {
+    if (!openaiKey || !supabaseUrl) {
       return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
     }
 
-    if (supabaseUrl && serviceKey) {
+    const authed = await verifyJWT(supabaseUrl, anonKey, req)
+    if (!authed) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (serviceKey) {
       const allowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'lookup-word', 50)
       if (!allowed) {
         return new Response(
@@ -79,21 +102,25 @@ Deno.serve(async (req) => {
     }
 
     const word = body.word
-    if (!word || typeof word !== 'string' || word.trim().length === 0) {
+    if (!word || typeof word !== 'string') {
       return new Response(JSON.stringify({ error: 'Invalid word' }), { status: 400, headers: corsHeaders })
     }
 
-    const sanitizedWord = word.trim().slice(0, 100)
+    const sanitizedWord = word
+      .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 100)
 
-    const prompt = `You are a bilingual technical English dictionary for Russian developers.
+    if (sanitizedWord.length === 0) {
+      return new Response(JSON.stringify({ error: 'Invalid word' }), { status: 400, headers: corsHeaders })
+    }
 
-The user searched for: ${JSON.stringify(sanitizedWord)}
-
-This may be in Russian or English. Your job:
-1. Identify the correct ENGLISH technical term (even if the input is in Russian, e.g. "стек" → "stack", "деплой" → "deploy")
-2. Return the canonical English term in the "word" field — always in English, never in Russian
-
-Return ONLY a JSON object, no markdown:
+    const systemPrompt = `You are a bilingual technical English dictionary for Russian developers.
+The user will provide a technical term (in English or Russian transliteration).
+Your job:
+1. Identify the correct canonical ENGLISH technical term (e.g. "стек" → "stack", "деплой" → "deploy").
+2. Return ONLY a JSON object — no markdown, no extra text:
 {
   "word": "canonical English term (ALWAYS in English)",
   "translation": "перевод на русский (1–4 слова)",
@@ -115,7 +142,10 @@ Return ONLY a JSON object, no markdown:
       signal: controller.signal,
       body: JSON.stringify({
         model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: sanitizedWord },
+        ],
         temperature: 0.3,
         response_format: { type: 'json_object' },
       }),
