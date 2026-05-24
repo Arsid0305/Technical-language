@@ -138,9 +138,9 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 ### 🟡 Средние (качество/CI)
 
 - **[CI-1] `automerge.yml` мержит напрямую в `main`** — любой пуш в `claude/...` без ревью.
-- **[CI-2] Единственный тест — `expect(true).toBe(true)`** — файл: `src/test/example.test.ts`
+- ~~**[CI-2] Единственный тест — `expect(true).toBe(true)`**~~ ✅ **FIXED** (2026-05-24) — заменён на реальные тесты `cn()` и нормализации ключей глоссария (7 тестов)
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
-- **[CI-4] Нет `npm audit` в CI**
+- ~~**[CI-4] Нет `npm audit` в CI**~~ ✅ **FIXED** (2026-05-24) — добавлен шаг `npm audit --audit-level=high`; зависимости обновлены через `npm audit fix`
 - **[TS-1] TypeScript strict mode отключён**
 
 ### ℹ️ Низкие / технический долг
