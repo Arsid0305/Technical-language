@@ -132,7 +132,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 ### 🟠 Высокие (надёжность/данные)
 
 - **[DATA-1] Прогресс хранится только в localStorage** — очистка браузера = полная потеря прогресса уроков. Файл: `src/hooks/useProgress.ts:39`
-- **[DATA-2] Glossary sync fire-and-forget** — `upsertGlossaryWord().catch(console.error)` молча теряет данные при сбое сети. Файл: `src/pages/Index.tsx:77-80`
+- ~~**[DATA-2] Glossary sync fire-and-forget**~~ ✅ **FIXED** (2026-05-24) — `Promise.allSettled` + toast-уведомления при ошибках синхронизации
 - **[PERF-1] N+1 запросов при сохранении словаря** — `words.forEach(word => upsertGlossaryWord(...))` делает по 1 HTTP POST на каждое слово (10-15 запросов). Нужен bulk-upsert. Файл: `src/pages/Index.tsx:77`
 
 ### 🟡 Средние (качество/CI)

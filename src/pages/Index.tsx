@@ -74,9 +74,14 @@ const Index = () => {
   ) => {
     addToGlossary(words)
     const deviceId = getDeviceId()
-    words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
-      upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { translation, explanation, explanationRu, example, exampleRu })
-        .catch(console.error)
+    Promise.allSettled(
+      words.map(({ word, translation, explanation, explanationRu, example, exampleRu }) =>
+        upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { translation, explanation, explanationRu, example, exampleRu })
+      )
+    ).then((results) => {
+      if (results.some((r) => r.status === 'rejected')) {
+        toast.error('Часть слов не сохранилась в базе — данные в браузере целы', { duration: 4000 })
+      }
     })
   }, [addToGlossary])
 
@@ -92,19 +97,19 @@ const Index = () => {
   const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
     addManualWord(word, entry)
     upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), { ...entry, manual: true })
-      .catch(console.error)
+      .catch(() => toast.error('Слово сохранено локально, но не синхронизировано с базой'))
   }, [addManualWord])
 
   const handleEnrichWord = useCallback((word: string, entry: GlossaryEntry) => {
     addToGlossary([{ word, ...entry }])
     upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), entry)
-      .catch(console.error)
+      .catch(() => toast.error('Слово сохранено локально, но не синхронизировано с базой'))
   }, [addToGlossary])
 
   const handleDeleteWord = useCallback((word: string) => {
     deleteWord(word)
     deleteGlossaryWord(getDeviceId(), word.toLowerCase().trim())
-      .catch(console.error)
+      .catch(() => toast.error('Слово удалено локально — в базе могло остаться'))
   }, [deleteWord])
 
   const handleSelectLesson = useCallback((day: number) => {
