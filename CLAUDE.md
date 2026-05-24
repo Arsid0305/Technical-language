@@ -41,7 +41,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 - React + Vite + TypeScript + Tailwind + shadcn/ui
 - Supabase Edge Functions (Deno) — `generate-lesson`, `lookup-word`
-- Supabase PostgreSQL — таблицы: `lessons` (кэш AI-уроков), `glossary` (словарь пользователя)
+- Supabase PostgreSQL — таблицы: `lessons` (кэш AI-уроков), `glossary` (словарь пользователя), `rate_limits` (контроль частоты запросов)
 - Анонимная идентификация: `device_id` UUID в localStorage (`vibe-eng-device-id`)
 
 ---
@@ -123,28 +123,28 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 ### 🔴 Критические (финансовый/безопасность)
 
-- **[SEC-1] Нет rate limiting на Edge Functions** — `generate-lesson` и `lookup-word` принимают любые запросы с публичным anon-ключом. Риск выжигания OpenAI-квоты. Файлы: `supabase/functions/generate-lesson/index.ts`, `supabase/functions/lookup-word/index.ts`
+- ~~**[SEC-1] Нет rate limiting**~~ ✅ **FIXED** (2026-05-24) — `rate_limits` таблица + `check_rate_limit()` SQL, 20/час для generate-lesson, 50/час для lookup-word
 - ~~**[SEC-2] CORS wildcard `*`**~~ ✅ **FIXED** (PR #27, 2026-05-24) — whitelist `https://technical-language.vercel.app` + `localhost:*`
 - **[SEC-3] Нет JWT-верификации в Edge Functions** — anon-ключ публичен (в JS-бандле), любой может вызывать функции напрямую.
-- **[SEC-4] RLS-статус таблиц неизвестен** — нет `supabase/migrations/`. Таблицы `lessons` и `glossary` скорее всего созданы вручную без RLS-политик.
+- **[SEC-4] RLS-статус таблиц неизвестен** — нет `supabase/migrations/` (видел миграцию). Таблицы `lessons` и `glossary` скорее всего созданы вручную без RLS-политик.
 - **[SEC-5] `force=true` без авторизации** — позволяет сбрасывать кэш уроков и вызывать платный OpenAI, передав `{"force": true}`.
 
 ### 🟠 Высокие (надёжность/данные)
 
-- **[DATA-1] Прогресс хранится только в localStorage** — очистка браузера = полная потеря прогресса уроков. Словарь синхронизируется в Supabase, прогресс — нет. Файл: `src/hooks/useProgress.ts:39`
-- **[DATA-2] Glossary sync fire-and-forget** — `upsertGlossaryWord().catch(console.error)` молча теряет данные при сбое сети. Нет retry, нет UI-индикации. Файл: `src/pages/Index.tsx:77-80`
-- **[PERF-1] N+1 запросов при сохранении словаря** — `words.forEach(word => upsertGlossaryWord(...))` делает по 1 HTTP POST на каждое слово урока (10-15 запросов). Нужен bulk-upsert. Файл: `src/pages/Index.tsx:77`
+- **[DATA-1] Прогресс хранится только в localStorage** — очистка браузера = полная потеря прогресса уроков. Файл: `src/hooks/useProgress.ts:39`
+- **[DATA-2] Glossary sync fire-and-forget** — `upsertGlossaryWord().catch(console.error)` молча теряет данные при сбое сети. Файл: `src/pages/Index.tsx:77-80`
+- **[PERF-1] N+1 запросов при сохранении словаря** — `words.forEach(word => upsertGlossaryWord(...))` делает по 1 HTTP POST на каждое слово (10-15 запросов). Нужен bulk-upsert. Файл: `src/pages/Index.tsx:77`
 
 ### 🟡 Средние (качество/CI)
 
-- **[CI-1] `automerge.yml` мержит напрямую в `main`** — любой пуш в `claude/...` при зелёном CI (который всегда зелёный) уходит в продакшн без ревью. TEMPLATE использует промежуточную `dev`-ветку.
-- **[CI-2] Единственный тест — `expect(true).toBe(true)`** — CI всегда зелёный, нет реального покрытия. Файл: `src/test/example.test.ts`
-- **[CI-3] Actions закреплены по тегу, не SHA** — `actions/setup-node@v4` вместо SHA. Supply chain risk. Файл: `.github/workflows/automerge.yml`
-- **[CI-4] Нет `npm audit` в CI** — уязвимые зависимости проходят в прод незамеченными.
-- **[TS-1] TypeScript strict mode отключён** — `strict: false`, `strictNullChecks: false`, `noImplicitAny: false`. Файлы: `tsconfig.json`, `tsconfig.app.json`
+- **[CI-1] `automerge.yml` мержит напрямую в `main`** — любой пуш в `claude/...` без ревью.
+- **[CI-2] Единственный тест — `expect(true).toBe(true)`** — файл: `src/test/example.test.ts`
+- **[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA** — supply chain risk.
+- **[CI-4] Нет `npm audit` в CI**
+- **[TS-1] TypeScript strict mode отключён**
 
 ### ℹ️ Низкие / технический долг
 
-- **[DEPS-1] ~15 неиспользуемых shadcn/ui зависимостей** — recharts, vaul, cmdk, react-day-picker, embla-carousel и др. из шаблона. Раздувают бандл.
-- **[OPS-1] Нет observability** — ни Sentry, ни метрик, ни алертов на OpenAI-квоту или ошибки Edge Functions.
-- **[ARCH-1] Нет схемы БД в репо** — `supabase/migrations/` отсутствует. Воспроизвести базу с нуля невозможно.
+- **[DEPS-1] ~15 неиспользуемых shadcn/ui зависимостей**
+- **[OPS-1] Нет observability** — ни Sentry, ни алертов на OpenAI-квоту.
+- **[ARCH-1] Нет схемы БД в репо** — `supabase/migrations/` появился (rate_limits), но `lessons` и `glossary` всё ещё без миграций.
