@@ -124,7 +124,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 ### 🔴 Критические (финансовый/безопасность)
 
 - **[SEC-1] Нет rate limiting на Edge Functions** — `generate-lesson` и `lookup-word` принимают любые запросы с публичным anon-ключом. Риск выжигания OpenAI-квоты. Файлы: `supabase/functions/generate-lesson/index.ts`, `supabase/functions/lookup-word/index.ts`
-- **[SEC-2] CORS wildcard `*`** — оба Edge Functions разрешают запросы с любого домена. TEMPLATE требует ограничить до реального домена. Файлы: те же, строка 1.
+- ~~**[SEC-2] CORS wildcard `*`**~~ ✅ **FIXED** (PR #27, 2026-05-24) — whitelist `https://technical-language.vercel.app` + `localhost:*`
 - **[SEC-3] Нет JWT-верификации в Edge Functions** — anon-ключ публичен (в JS-бандле), любой может вызывать функции напрямую.
 - **[SEC-4] RLS-статус таблиц неизвестен** — нет `supabase/migrations/`. Таблицы `lessons` и `glossary` скорее всего созданы вручную без RLS-политик.
 - **[SEC-5] `force=true` без авторизации** — позволяет сбрасывать кэш уроков и вызывать платный OpenAI, передав `{"force": true}`.
@@ -139,7 +139,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 - **[CI-1] `automerge.yml` мержит напрямую в `main`** — любой пуш в `claude/...` при зелёном CI (который всегда зелёный) уходит в продакшн без ревью. TEMPLATE использует промежуточную `dev`-ветку.
 - **[CI-2] Единственный тест — `expect(true).toBe(true)`** — CI всегда зелёный, нет реального покрытия. Файл: `src/test/example.test.ts`
-- **[CI-3] Actions закреплены по тегу, не SHA** — `actions/checkout@v4` вместо SHA. Supply chain risk. Файл: `.github/workflows/automerge.yml:6`
+- **[CI-3] Actions закреплены по тегу, не SHA** — `actions/setup-node@v4` вместо SHA. Supply chain risk. Файл: `.github/workflows/automerge.yml`
 - **[CI-4] Нет `npm audit` в CI** — уязвимые зависимости проходят в прод незамеченными.
 - **[TS-1] TypeScript strict mode отключён** — `strict: false`, `strictNullChecks: false`, `noImplicitAny: false`. Файлы: `tsconfig.json`, `tsconfig.app.json`
 
