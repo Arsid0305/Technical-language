@@ -7,7 +7,7 @@ describe("cn", () => {
   });
 
   it("drops falsy values", () => {
-    expect(cn(false && "hidden", "block")).toBe("block");
+    expect(cn(false, "block")).toBe("block");
     expect(cn(undefined, "text-sm")).toBe("text-sm");
   });
 

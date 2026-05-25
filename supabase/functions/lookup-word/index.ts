@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     }
 
     const sanitizedWord = word
-      .replace(/[\x00-\x1f\x7f-\x9f]/g, '')
+      .replace(new RegExp('[\\x00-\\x1f\\x7f-\\x9f]', 'g'), '')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 100)
