@@ -93,13 +93,15 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 ## Рабочий процесс
 
-Схема: `ветки` → `main` (после билда) → Vercel
+Схема: `ветки` → PR → `main` (после ревью автомержем) → Vercel
 
 1. Claude пишет код → пушит в ветку `claude/...`
-2. `automerge.yml` делает `npm ci` + `npm run build`, затем мержит ветку в `main`
+2. Создаётся PR → `automerge.yml` автоматически мержит его в `main` через GitHub API (squash)
 3. Vercel деплоит фронтенд (1-2 мин)
 4. GitHub Actions деплоит Edge Functions (1-2 мин)
 5. Тестируем на проде
+
+**Требует:** Settings → General → «Allow auto-merge» включён в репо.
 
 ---
 
@@ -137,7 +139,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 ### 🟡 Средние (качество/CI)
 
-- **[CI-1] `automerge.yml` мержит напрямую в `main`** — любой пуш в `claude/...` без ревью.
+- ~~**[CI-1] `automerge.yml` мержит напрямую в `main`**~~ ✅ **FIXED** (2026-05-25) — переведён на PR-based automerge через GitHub API (squash)
 - **[CI-2] Единственный тест — `expect(true).toBe(true)`** — файл: `src/test/example.test.ts`
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**

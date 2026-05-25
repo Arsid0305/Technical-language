@@ -1,53 +1,24 @@
-name: Auto-merge feature branches
+name: Auto-merge claude/cursor branches
 
 on:
-  push:
-    branches:
-      - 'claude/**'
-      - 'cursor/**'
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 jobs:
-  automerge-to-main:
+  automerge:
     runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'claude/') || startsWith(github.head_ref, 'cursor/')
     permissions:
+      pull-requests: write
       contents: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
-        with:
-          node-version: 22
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      - name: Check for merge conflicts
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
-          git fetch origin main
-          git checkout -B main origin/main
-          git merge --no-commit --no-ff origin/${{ github.ref_name }} \
-            || { git merge --abort; echo "::error::Merge conflict in ${{ github.ref_name }}"; exit 1; }
-          git merge --abort 2>/dev/null || true
-
-      - name: Merge into main
-        run: |
-          git checkout -B main origin/main
-          git merge --no-ff origin/${{ github.ref_name }} -m "Auto-merge ${{ github.ref_name }} into main"
-          git push origin main
-
-      - name: Delete merged branch
-        run: git push origin --delete "${{ github.ref_name }}"
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              merge_method: 'squash'
+            })
