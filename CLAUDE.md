@@ -41,8 +41,10 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 - React + Vite + TypeScript + Tailwind + shadcn/ui
 - Supabase Edge Functions (Deno) — `generate-lesson`, `lookup-word`
-- Supabase PostgreSQL — таблицы: `lessons` (кэш AI-уроков), `glossary` (словарь пользователя), `rate_limits` (контроль частоты запросов)
+- Supabase PostgreSQL — проект `ovhwxfdtkzwxfomdlgjv`, схема `technical_language`
+- Таблицы: `technical_language.lessons` (кэш AI-уроков), `technical_language.glossary` (словарь пользователя), `technical_language.rate_limits`
 - Анонимная идентификация: `device_id` UUID в localStorage (`vibe-eng-device-id`)
+- Ключ фронтенда: `VITE_SUPABASE_PUBLISHABLE_KEY` (Supabase переименовал anon key)
 
 ---
 
@@ -128,7 +130,7 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 - ~~**[SEC-1] Нет rate limiting**~~ ✅ **FIXED** (2026-05-24) — `rate_limits` таблица + `check_rate_limit()` SQL, 20/час для generate-lesson, 50/час для lookup-word
 - ~~**[SEC-2] CORS wildcard `*`**~~ ✅ **FIXED** (PR #27, 2026-05-24) — whitelist `https://technical-language.vercel.app` + `localhost:*`
 - **[SEC-3] Нет JWT-верификации в Edge Functions** — anon-ключ публичен (в JS-бандле), любой может вызывать функции напрямую.
-- **[SEC-4] RLS-статус таблиц неизвестен** — нет `supabase/migrations/` (видел миграцию). Таблицы `lessons` и `glossary` скорее всего созданы вручную без RLS-политик.
+- ~~**[SEC-4] RLS и схема БД**~~ ✅ **FIXED** (PR #30, 2026-05-27) — RLS политики для `technical_language.lessons` и `technical_language.glossary`; код переведён на `VITE_SUPABASE_PUBLISHABLE_KEY` и `Accept-Profile/Content-Profile: technical_language`; `public.glossary` удалён.
 - **[SEC-5] `force=true` без авторизации** — позволяет сбрасывать кэш уроков и вызывать платный OpenAI, передав `{"force": true}`.
 
 ### 🟠 Высокие (надёжность/данные)
@@ -149,4 +151,4 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 - **[DEPS-1] ~15 неиспользуемых shadcn/ui зависимостей**
 - **[OPS-1] Нет observability** — ни Sentry, ни алертов на OpenAI-квоту.
-- **[ARCH-1] Нет схемы БД в репо** — `supabase/migrations/` появился (rate_limits), но `lessons` и `glossary` всё ещё без миграций.
+- ~~**[ARCH-1] Нет схемы БД в репо**~~ ✅ **FIXED** (PR #30, 2026-05-27) — миграции в `supabase/migrations/` покрывают все таблицы.
