@@ -1,9 +1,10 @@
 import type { GlossaryEntry } from '@/hooks/useProgress'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
 const DEVICE_ID_KEY = 'vibe-eng-device-id'
+const DB_SCHEMA = 'technical_language'
 
 export function getDeviceId(): string {
   let id = localStorage.getItem(DEVICE_ID_KEY)
@@ -14,7 +15,7 @@ export function getDeviceId(): string {
   return id
 }
 
-const headers = {
+const baseHeaders = {
   apikey: SUPABASE_ANON_KEY,
   Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
   'Content-Type': 'application/json',
@@ -25,7 +26,7 @@ export async function fetchGlossaryFromSupabase(
 ): Promise<Record<string, GlossaryEntry>> {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/glossary?device_id=eq.${encodeURIComponent(deviceId)}&select=*`,
-    { headers }
+    { headers: { ...baseHeaders, 'Accept-Profile': DB_SCHEMA } }
   )
   if (!res.ok) return {}
   const rows: {
@@ -59,7 +60,7 @@ export async function upsertGlossaryWord(
 ): Promise<void> {
   await fetch(`${SUPABASE_URL}/rest/v1/glossary`, {
     method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
+    headers: { ...baseHeaders, 'Content-Profile': DB_SCHEMA, Prefer: 'resolution=merge-duplicates' },
     body: JSON.stringify({
       device_id: deviceId,
       word,
@@ -79,6 +80,6 @@ export async function deleteGlossaryWord(
 ): Promise<void> {
   await fetch(
     `${SUPABASE_URL}/rest/v1/glossary?device_id=eq.${encodeURIComponent(deviceId)}&word=eq.${encodeURIComponent(word)}`,
-    { method: 'DELETE', headers }
+    { method: 'DELETE', headers: { ...baseHeaders, 'Content-Profile': DB_SCHEMA } }
   )
 }
