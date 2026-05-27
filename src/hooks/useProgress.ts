@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { getDeviceId } from '@/lib/glossaryService'
+import { fetchLatestProgress, saveProgressToSupabase } from '@/lib/progressService'
 
 export interface Mistake {
   day: number
@@ -77,6 +79,20 @@ export function useProgress() {
     return defaultProgress
   })
 
+  const fromRemote = useRef(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // On mount: load latest progress from Supabase (last saved on any device wins)
+  useEffect(() => {
+    fetchLatestProgress()
+      .then((remote) => {
+        if (!remote) return
+        fromRemote.current = true
+        setProgress({ ...defaultProgress, ...(remote as Partial<UserProgress>) })
+      })
+      .catch(console.error)
+  }, [])
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
@@ -84,6 +100,16 @@ export function useProgress() {
       console.error('Failed to save progress:', e)
       window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
     }
+    // Skip Supabase save when this change came from Supabase load
+    if (fromRemote.current) {
+      fromRemote.current = false
+      return
+    }
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      saveProgressToSupabase(getDeviceId(), progress as unknown as Record<string, unknown>)
+        .catch(console.error)
+    }, 1500)
   }, [progress])
 
   const getDayProgress = useCallback((day: number): DayProgress => {
@@ -170,7 +196,6 @@ export function useProgress() {
 
   const mergeGlossary = useCallback((remote: Record<string, GlossaryEntry>) => {
     setProgress((prev) => {
-      // Local wins for existing entries; remote fills in missing ones
       const merged = { ...remote, ...prev.glossary }
       return { ...prev, glossary: merged }
     })
