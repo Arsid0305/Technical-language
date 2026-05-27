@@ -1,3 +1,4 @@
+// deploy: 2026-05-27
 const ALLOWED_ORIGINS = new Set([
   'https://technical-language.vercel.app',
 ])
@@ -124,7 +125,7 @@ Return ONLY a JSON object, no markdown:
     clearTimeout(timeout)
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
+      const err = await res.json().catch(() => ({}))    
       throw new Error(`OpenAI error ${res.status}: ${err.error?.message ?? 'unknown'}`)
     }
 
