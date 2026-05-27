@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getDeviceId } from '@/lib/glossaryService'
 import { fetchLatestProgress, saveProgressToSupabase } from '@/lib/progressService'
 
 export interface Mistake {
@@ -107,7 +106,7 @@ export function useProgress() {
     }
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      saveProgressToSupabase(getDeviceId(), progress as unknown as Record<string, unknown>)
+      saveProgressToSupabase(progress as unknown as Record<string, unknown>)
         .catch(console.error)
     }, 1500)
   }, [progress])
