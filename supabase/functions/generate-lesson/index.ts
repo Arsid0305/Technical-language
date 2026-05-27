@@ -48,7 +48,7 @@ async function checkRateLimit(
 }
 
 const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
-  // ── BEGINNER VOCABULARY (lessons 1–8) ──────────────────────────────────────
+  // ── BEGINNER VOCABULARY (lessons 1–8) ────────────────────────────────────────────────────────────────────────────
   { beginner: true, title: 'Bug, Fix, Script, Run: Your First Dev Words', detail: 'bug (ошибка в коде), fix (исправить), script (файл с кодом для запуска), run / execute (запустить), error (ошибка), output (что напечатала программа), crash (упало), log (запись в консоли).' },
   { beginner: true, title: 'Push, Pull, Commit: Git Vocabulary', detail: 'commit (сохранить снимок кода), push (отправить на сервер), pull (получить чужие изменения), branch (ветка), merge (соединить ветки), clone (скачать репозиторий), fork (своя копия чужого репо), repository / repo (хранилище кода), staging area (что войдёт в коммит).' },
   { beginner: true, title: 'Deploy and Build: Getting Your App Live', detail: 'deploy (опубликовать приложение), build (собрать из исходников), release (выпустить версию), environment (dev/staging/production), production (живой сервер), preview (временная ссылка), pipeline (цепочка шагов), CI/CD.' },
@@ -58,7 +58,7 @@ const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   { beginner: true, title: 'Auth: Sign In, Token, Magic Link', detail: 'authentication / auth, sign in / sign out, session, token, Magic Link, OTP, email verification, RLS — Row Level Security.' },
   { beginner: true, title: 'API, Fetch, Response: Talking to Servers', detail: 'API, request, response, fetch, endpoint, status code (200/404/500), JSON, payload, async / await, loading.' },
 
-  // ── TOOL DEEP-DIVES (lessons 9+) ───────────────────────────────────────────
+  // ── TOOL DEEP-DIVES (lessons 9+) ───────────────────────────────────────────────────────────────────────────────────
   { title: 'The Terminal — Your First Tool', detail: 'cd, ls/dir, pwd, mkdir, rm; what a file path is; flags and arguments; tab completion; running scripts from the terminal' },
   { title: 'Git: Saving Your Work', detail: 'what version control solves; git init, git status, git add, git commit -m; the staging area; .gitignore; reading git log' },
   { title: 'Git Branches: Working in Parallel', detail: 'why branches exist; git branch, git checkout, git switch; HEAD pointer; merging with git merge; fast-forward vs merge commit; git log --graph' },
@@ -88,7 +88,7 @@ const TOPICS: { title: string; detail: string; beginner?: boolean }[] = [
   { title: 'TypeScript Advanced: Generics and Utility Types', detail: 'what generics solve; writing a generic function; generic React components; built-in utility types: Partial, Omit, Pick, ReturnType, Record; the satisfies operator' },
   { title: 'React Advanced: Custom Hooks and useCallback', detail: 'extracting reusable logic into custom hooks; naming convention use*; when useCallback prevents unnecessary re-renders; when NOT to over-optimize; React.memo basics' },
 
-  // ── AI_OS / VIBE CODING WORKFLOW ──────────────────────────────────────────
+  // ── AI_OS / VIBE CODING WORKFLOW ──────────────────────────────────────────────────────────────────────────────────
   { title: 'Claude Code: Branches, Automerge, and CLAUDE.md', detail: 'claude/* branch naming; CLAUDE.md adapter file; automerge.yml workflow; "push to branch, CI merges to main"; subagent; haiku vs sonnet vs opus model; BIG task vs SMALL task; "разрабатывать на ветке claude/..., никогда не пушить напрямую в main"' },
   { title: 'Reading a Code Audit Report', detail: 'severity (critical / high / medium / low / info); root cause; consequence; recommended fix; confidence; "this will silently fail when…"; "the pattern X is vulnerable because…"; findings grouped by category (security / architecture / performance / code quality)' },
   { title: 'Vercel: Build Logs and Deployment Errors', detail: '"Build failed"; "Deployment ready"; "Error: Cannot find module"; preview deployment; production deployment; build minutes; install command; build command; environment variable; "Function Logs" in Vercel dashboard; redeploy; rollback deployment' },
@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
     if (!force) {
       const existingRes = await fetch(
         `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
-        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } }
+        { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Accept-Profile': 'technical_language' } }
       )
       const existing = await existingRes.json()
       if (existing.length > 0) {
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
 
     const isBeginnerLesson = topic.beginner === true
 
-    const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}` 
+    const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}`
 
     const prompt = isBeginnerLesson
       ? `You are creating English vocabulary lessons for a Russian beginner developer. She uses these words in Russian daily but wants to recognise them in technical English.
@@ -278,6 +278,7 @@ Requirements:
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
+        'Content-Profile': 'technical_language',
         Prefer: 'resolution=merge-duplicates,return=minimal',
       },
       body: JSON.stringify({ lesson_number: lessonNumber, content: lessonContent }),
