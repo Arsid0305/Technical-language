@@ -132,6 +132,7 @@ const Index = () => {
   }, [targetDay, prevMistakeCount, queryClient])
 
   const dayProgress = getDayProgress(targetDay)
+  const allMistakes = Object.values(progress.days).flatMap((d) => d.mistakes ?? [])
   const todayMistakes = getMistakesForDay(targetDay)
   const canGoBack = targetDay > 1
   const canGoForward = targetDay < progress.currentDay
@@ -164,7 +165,7 @@ const Index = () => {
 
   if (!lesson) return null
 
-  const showLessonNav = currentView === 'today' || currentView === 'extra' || currentView === 'mistakes'
+  const showLessonNav = currentView === 'today' || currentView === 'extra'
 
   return (
     <div className="min-h-screen bg-reading-bg">
@@ -213,7 +214,7 @@ const Index = () => {
             onMistake={handleMistake}
           />
         )}
-        {currentView === 'mistakes' && <MistakesView mistakes={todayMistakes} day={targetDay} />}
+        {currentView === 'mistakes' && <MistakesView mistakes={allMistakes} />}
         {currentView === 'progress' && (
           <ProgressView progress={progress} onSelectLesson={handleSelectLesson} />
         )}
@@ -227,7 +228,7 @@ const Index = () => {
         )}
       </main>
 
-      <Navigation currentView={currentView} onViewChange={setCurrentView} hasMistakes={todayMistakes.length > 0} />
+      <Navigation currentView={currentView} onViewChange={setCurrentView} hasMistakes={allMistakes.length > 0} />
     </div>
   )
 }
