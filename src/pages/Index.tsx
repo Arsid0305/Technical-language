@@ -205,6 +205,7 @@ const Index = () => {
             onMarkConsolidationCompleted={() => markConsolidationCompleted(targetDay)}
             onMistake={handleMistake}
             onNextLesson={handleNextLesson}
+            onAddToGlossary={handleAddToGlossary}
           />
         )}
         {currentView === 'extra' && (

@@ -16,12 +16,13 @@ interface TodayViewProps {
   onMarkConsolidationCompleted: () => void;
   onMistake: (taskId: string, question: string, userAnswer: string, correctAnswer: string, explanationRu: string) => void;
   onNextLesson: () => void;
+  onAddToGlossary?: (words: { word: string; translation: string }[]) => void;
 }
 
 export function TodayView({
   lesson, dayProgress,
   onMarkTextCompleted, onMarkTasksCompleted, onMarkConsolidationCompleted,
-  onMistake, onNextLesson,
+  onMistake, onNextLesson, onAddToGlossary,
 }: TodayViewProps) {
   const [stage, setStage] = useState<Stage>(() => {
     if (dayProgress.consolidationCompleted) return 'complete';
@@ -49,6 +50,7 @@ export function TodayView({
           text={lesson.text}
           onFinishReading={handleFinishReading}
           isCompleted={dayProgress.textCompleted}
+          onAddToGlossary={onAddToGlossary}
         />
       )}
 
