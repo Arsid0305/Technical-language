@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Plus, Check } from 'lucide-react';
 
 interface TranslationPopupProps {
   vocabulary: { word: string; translation: string }[];
+  onAddToGlossary?: (words: { word: string; translation: string }[]) => void;
 }
 
 interface PopupState {
@@ -219,7 +221,7 @@ const commonTranslations: Record<string, string> = {
   'another': 'другой, ещё один',
 };
 
-export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
+export function TranslationPopup({ vocabulary, onAddToGlossary }: TranslationPopupProps) {
   const [popup, setPopup] = useState<PopupState>({
     visible: false,
     text: '',
@@ -227,6 +229,7 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
     x: 0,
     y: 0,
   });
+  const [added, setAdded] = useState(false);
 
   const findTranslation = useCallback((text: string): string | null => {
     const normalizedText = text.toLowerCase().trim();
@@ -292,6 +295,7 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
         const range = selection?.getRangeAt(0);
         const rect = range?.getBoundingClientRect();
         if (rect) {
+          setAdded(false);
           setPopup({
             visible: true,
             text: selectedText,
@@ -325,18 +329,37 @@ export function TranslationPopup({ vocabulary }: TranslationPopupProps) {
     };
   }, [findTranslation]);
 
+  const handleAdd = () => {
+    if (!onAddToGlossary) return;
+    onAddToGlossary([{ word: popup.text, translation: popup.translation }]);
+    setAdded(true);
+    setTimeout(() => setPopup((prev) => ({ ...prev, visible: false })), 800);
+  };
+
   if (!popup.visible) return null;
 
   return (
     <div
-      className="fixed z-50 transform -translate-x-1/2 -translate-y-full pointer-events-none animate-fade-in"
+      className="fixed z-50 transform -translate-x-1/2 -translate-y-full animate-fade-in"
       style={{ left: popup.x, top: popup.y }}
     >
-      <div className="bg-popover border border-border rounded-lg shadow-lg px-3 py-2 max-w-xs">
-        <p className="text-sm font-medium text-foreground">{popup.text}</p>
-        <p className="text-sm text-muted-foreground mt-0.5">{popup.translation}</p>
+      <div className="bg-popover border border-border rounded-lg shadow-lg px-3 py-2 max-w-xs flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{popup.text}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{popup.translation}</p>
+        </div>
+        {onAddToGlossary && (
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleAdd}
+            className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+            title="Добавить в словарь"
+          >
+            {added ? <Check className="w-4 h-4 text-green-600" /> : <Plus className="w-4 h-4" />}
+          </button>
+        )}
       </div>
-      <div 
+      <div
         className="w-2 h-2 bg-popover border-r border-b border-border transform rotate-45 mx-auto -mt-1"
       />
     </div>

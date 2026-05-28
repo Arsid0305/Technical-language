@@ -7,14 +7,15 @@ interface ReadingTextProps {
   text: DailyText;
   onFinishReading: () => void;
   isCompleted: boolean;
+  onAddToGlossary?: (words: { word: string; translation: string }[]) => void;
 }
 
-export function ReadingText({ text, onFinishReading, isCompleted }: ReadingTextProps) {
+export function ReadingText({ text, onFinishReading, isCompleted, onAddToGlossary }: ReadingTextProps) {
   const paragraphs = text.content.split('\n\n');
 
   return (
     <div className="relative">
-      <TranslationPopup vocabulary={text.vocabulary} />
+      <TranslationPopup vocabulary={text.vocabulary} onAddToGlossary={onAddToGlossary} />
       
       <article className="reading-text">
         {paragraphs.map((paragraph, index) => (

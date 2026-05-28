@@ -132,6 +132,7 @@ const Index = () => {
   }, [targetDay, prevMistakeCount, queryClient])
 
   const dayProgress = getDayProgress(targetDay)
+  const allMistakes = Object.values(progress.days).flatMap((d) => d.mistakes ?? [])
   const todayMistakes = getMistakesForDay(targetDay)
   const canGoBack = targetDay > 1
   const canGoForward = targetDay < progress.currentDay
@@ -204,6 +205,7 @@ const Index = () => {
             onMarkConsolidationCompleted={() => markConsolidationCompleted(targetDay)}
             onMistake={handleMistake}
             onNextLesson={handleNextLesson}
+            onAddToGlossary={handleAddToGlossary}
           />
         )}
         {currentView === 'extra' && (
@@ -213,7 +215,7 @@ const Index = () => {
             onMistake={handleMistake}
           />
         )}
-        {currentView === 'mistakes' && <MistakesView mistakes={todayMistakes} day={targetDay} />}
+        {currentView === 'mistakes' && <MistakesView mistakes={allMistakes} />}
         {currentView === 'progress' && (
           <ProgressView progress={progress} onSelectLesson={handleSelectLesson} />
         )}
@@ -227,7 +229,7 @@ const Index = () => {
         )}
       </main>
 
-      <Navigation currentView={currentView} onViewChange={setCurrentView} hasMistakes={todayMistakes.length > 0} />
+      <Navigation currentView={currentView} onViewChange={setCurrentView} hasMistakes={allMistakes.length > 0} />
     </div>
   )
 }
