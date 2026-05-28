@@ -351,6 +351,7 @@ export function TranslationPopup({ vocabulary, onAddToGlossary }: TranslationPop
         {onAddToGlossary && (
           <button
             onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handleAdd}
             className="shrink-0 flex items-center justify-center w-7 h-7 rounded-md hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
             title="Добавить в словарь"
