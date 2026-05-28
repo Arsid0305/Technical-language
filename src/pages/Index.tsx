@@ -164,7 +164,7 @@ const Index = () => {
 
   if (!lesson) return null
 
-  const showLessonNav = currentView === 'today' || currentView === 'extra'
+  const showLessonNav = currentView === 'today' || currentView === 'extra' || currentView === 'mistakes'
 
   return (
     <div className="min-h-screen bg-reading-bg">
