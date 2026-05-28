@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getDeviceId } from '@/lib/glossaryService'
 import { fetchLatestProgress, saveProgressToSupabase } from '@/lib/progressService'
 
 export interface Mistake {
@@ -82,7 +81,7 @@ export function useProgress() {
   const fromRemote = useRef(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // On mount: load latest progress from Supabase (last saved on any device wins)
+  // On mount: load progress from Supabase (last saved on any device wins)
   useEffect(() => {
     fetchLatestProgress()
       .then((remote) => {
@@ -100,7 +99,7 @@ export function useProgress() {
       console.error('Failed to save progress:', e)
       window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
     }
-    // Skip Supabase save when this change came from Supabase load
+    // Skip Supabase save when this state change came from Supabase load
     if (fromRemote.current) {
       fromRemote.current = false
       return
