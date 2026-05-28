@@ -129,9 +129,9 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 - ~~**[SEC-1] Нет rate limiting**~~ ✅ **FIXED** (2026-05-24) — `rate_limits` таблица + `check_rate_limit()` SQL, 20/час для generate-lesson, 50/час для lookup-word
 - ~~**[SEC-2] CORS wildcard `*`**~~ ✅ **FIXED** (PR #27, 2026-05-24) — whitelist `https://technical-language.vercel.app` + `localhost:*`
-- **[SEC-3] Нет JWT-верификации в Edge Functions** — anon-ключ публичен (в JS-бандле), любой может вызывать функции напрямую.
+- ~~**[SEC-3] Нет JWT-верификации в Edge Functions**~~ ✅ **FIXED** (PR #39, 2026-05-28) — `verify_jwt: true` на уровне платформы Supabase + HMAC-верификация внутри функции через `SUPABASE_JWT_SECRET`.
 - ~~**[SEC-4] RLS и схема БД**~~ ✅ **FIXED** (PR #30, 2026-05-27) — RLS политики для `technical_language.lessons` и `technical_language.glossary`; код переведён на `VITE_SUPABASE_PUBLISHABLE_KEY` и `Accept-Profile/Content-Profile: technical_language`; `public.glossary` удалён.
-- **[SEC-5] `force=true` без авторизации** — позволяет сбрасывать кэш уроков и вызывать платный OpenAI, передав `{"force": true}`.
+- ~~**[SEC-5] `force=true` без авторизации**~~ ✅ **FIXED** (PR #39, 2026-05-28) — отдельный rate limit 3/час на IP для `force=true`, предотвращает спам OpenAI.
 
 ### 🟠 Высокие (надёжность/данные)
 
