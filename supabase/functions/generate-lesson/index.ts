@@ -304,13 +304,29 @@ Requirements:
 
     const lessonContent = JSON.parse(openaiData.choices[0].message.content)
 
+    // Structural validation — inline (Deno без npm zod). Bad response → 502, кэш не пишем.
+    const isString = (v: unknown): v is string => typeof v === 'string' && v.length > 0
+    const isTask = (t: unknown): boolean => {
+      if (!t || typeof t !== 'object') return false
+      const x = t as Record<string, unknown>
+      return isString(x.id) &&
+        (typeof x.type === 'string') &&
+        Array.isArray(x.options) && x.options.every(isString) && x.options.length >= 2 &&
+        typeof x.correctIndex === 'number' && x.correctIndex >= 0 && x.correctIndex < (x.options as unknown[]).length
+    }
+    const validVocabulary = Array.isArray(lessonContent.text?.vocabulary) &&
+      lessonContent.text.vocabulary.length > 0 &&
+      lessonContent.text.vocabulary.every((v: unknown) => v && typeof v === 'object' && isString((v as any).term))
     if (
-      !lessonContent.text?.content ||
-      !lessonContent.text?.vocabulary?.length ||
-      !Array.isArray(lessonContent.tasks) || lessonContent.tasks.length < 1 ||
-      !Array.isArray(lessonContent.consolidation) || lessonContent.consolidation.length < 1
+      !isString(lessonContent.text?.content) ||
+      !validVocabulary ||
+      !Array.isArray(lessonContent.tasks) || lessonContent.tasks.length < 1 || !lessonContent.tasks.every(isTask) ||
+      !Array.isArray(lessonContent.consolidation) || lessonContent.consolidation.length < 1 || !lessonContent.consolidation.every(isTask)
     ) {
-      throw new Error('Invalid lesson structure from AI')
+      return new Response(JSON.stringify({ error: 'Invalid lesson structure from AI' }), {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     await fetch(`${supabaseUrl}/rest/v1/lessons`, {

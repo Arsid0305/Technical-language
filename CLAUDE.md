@@ -120,23 +120,28 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 - ~~**[SEC-3] Нет JWT-верификации в Edge Functions**~~ ✅ **FIXED** (PR #39, 2026-05-28) — `verify_jwt: true` на уровне платформы Supabase + HMAC-верификация внутри функции через `SUPABASE_JWT_SECRET`.
 - ~~**[SEC-4] RLS и схема БД**~~ ✅ **FIXED** (PR #30, 2026-05-27) — RLS политики для `technical_language.lessons` и `technical_language.glossary`; код переведён на `VITE_SUPABASE_PUBLISHABLE_KEY` и `Accept-Profile/Content-Profile: technical_language`; `public.glossary` удалён.
 - ~~**[SEC-5] `force=true` без авторизации**~~ ✅ **FIXED** (PR #39, 2026-05-28) — отдельный rate limit 3/час на IP для `force=true`, предотвращает спам OpenAI.
+- **[SEC-6] RLS glossary/progress широко открыт (`USING (true)`)** — любой с publishable-ключом может прочитать/удалить весь словарь всех устройств. Модель фундаментально анонимная (нет auth). Мера: перенести glossary/progress-IO в Edge Function с HMAC-проверкой device_id или ввести client-side JWT c device_id claim. Прецедент: audit 2026-07-11.
 
 ### 🟠 Высокие (надёжность/данные)
 
-- **[DATA-1] Прогресс хранится только в localStorage** — очистка браузера = полная потеря прогресса уроков. Файл: `src/hooks/useProgress.ts:39`
+- ~~**[DATA-1] Прогресс хранится только в localStorage**~~ ✅ **FIXED** (2026-07-11, миграция `20260711_create_progress.sql`) — таблица `technical_language.progress` + `saveProgressToSupabase`/`fetchLatestProgress` в `src/lib/progressService.ts` (per device_id). Плюс beforeunload/visibilitychange flush в `useProgress.ts`.
 - **[DATA-2] Glossary sync fire-and-forget** — `upsertGlossaryWord().catch(console.error)` молча теряет данные при сбое сети. Файл: `src/pages/Index.tsx:77-80`
 - **[PERF-1] N+1 запросов при сохранении словаря** — `words.forEach(word => upsertGlossaryWord(...))` делает по 1 HTTP POST на каждое слово (10-15 запросов). Нужен bulk-upsert. Файл: `src/pages/Index.tsx:77`
+- **[DATA-3] Race в generate-lesson при concurrent cache-miss** — два одновременных POST для одного `lessonNumber` → оба вызовут OpenAI, второй upsert затрёт. Нужен `pg_advisory_xact_lock(hashtext('lesson:' || lessonNumber))` в начале.
 
 ### 🟡 Средние (качество/CI)
 
 - ~~**[CI-1] `automerge.yml` мержит напрямую в `main`**~~ ✅ **FIXED** (2026-05-25) — переведён на PR-based automerge через GitHub API (squash)
-- **[CI-2] Единственный тест — `expect(true).toBe(true)`** — файл: `src/test/example.test.ts`
+- ~~**[CI-2] Единственный тест — `expect(true).toBe(true)`**~~ частично — `automerge.yml` теперь блокирует merge при упавшем build/test (2026-07-11). Написать реальные тесты — TODO отдельно.
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**
+- ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED** (2026-07-11) — закреплён на SHA v1.1.1
 - **[TS-1] TypeScript strict mode отключён**
 
 ### ℹ️ Низкие / технический долг
 
 - **[DEPS-1] ~15 неиспользуемых shadcn/ui зависимостей**
 - **[OPS-1] Нет observability** — ни Sentry, ни алертов на OpenAI-квоту.
-- ~~**[ARCH-1] Нет схемы БД в репо**~~ ✅ **FIXED** (PR #30, 2026-05-27) — миграции в `supabase/migrations/` покрывают все таблицы.
+- ~~**[ARCH-1] Нет схемы БД в репо**~~ ✅ **FIXED** (PR #30, 2026-05-27) + `progress` таблица покрыта миграцией 2026-07-11.
+- ~~**[SEC-CONFIG] `supabase/config.toml` не в git**~~ ✅ **FIXED** (2026-07-11) — `verify_jwt=true` для обеих функций закоммичено, плюс продублирована HMAC-проверка в `lookup-word`.
+- ~~**[SEC-ENV] `.env.production` в репо**~~ ✅ **FIXED** (2026-07-11) — переименован в `.env.production.example`, `.gitignore` обновлён.

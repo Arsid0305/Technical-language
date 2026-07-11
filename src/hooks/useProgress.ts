@@ -81,7 +81,7 @@ export function useProgress() {
   const fromRemote = useRef(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // On mount: load progress from Supabase (last saved on any device wins)
+  // On mount: load progress from Supabase for THIS device_id (last saved on this device wins)
   useEffect(() => {
     fetchLatestProgress()
       .then((remote) => {
@@ -109,6 +109,24 @@ export function useProgress() {
       saveProgressToSupabase(progress as unknown as Record<string, unknown>)
         .catch(console.error)
     }, 1500)
+  }, [progress])
+
+  // Flush pending save on tab close / visibility change — иначе изменения ≤1.5s могут потеряться при cross-device sync
+  useEffect(() => {
+    const flush = () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current)
+        saveTimer.current = null
+        saveProgressToSupabase(progress as unknown as Record<string, unknown>).catch(console.error)
+      }
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('beforeunload', flush)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('beforeunload', flush)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [progress])
 
   const getDayProgress = useCallback((day: number): DayProgress => {
