@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment — только .example коммитим, реальные значения в Vercel dashboard
+.env
+.env.*
+!.env.*.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

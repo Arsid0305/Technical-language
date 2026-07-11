@@ -1,0 +1,12 @@
+# Supabase project config — committed to git for reproducibility.
+# Edge Functions with `verify_jwt = true` reject requests without a valid Supabase JWT
+# at the platform level (before hitting function code). Inside each function we also
+# run HMAC-SHA256 verification via SUPABASE_JWT_SECRET for defense-in-depth.
+
+project_id = "ovhwxfdtkzwxfomdlgjv"
+
+[functions.generate-lesson]
+verify_jwt = true
+
+[functions.lookup-word]
+verify_jwt = true

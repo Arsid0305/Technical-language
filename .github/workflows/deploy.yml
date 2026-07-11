@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@2b81a2f4f21fc45c34bc5c4a24ddc2b31e2c34fe  # v1.1.1
         with:
           version: latest
       - run: supabase functions deploy generate-lesson --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}

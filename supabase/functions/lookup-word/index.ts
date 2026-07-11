@@ -17,6 +17,26 @@ function getClientIp(req: Request): string {
   return forwarded.split(',')[0].trim()
 }
 
+async function verifySupabaseJwt(token: string, secret: string): Promise<boolean> {
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+  try {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    )
+    const data = new TextEncoder().encode(`${parts[0]}.${parts[1]}`)
+    const b64 = parts[2].replace(/-/g, '+').replace(/_/g, '/')
+    const sig = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+    return await crypto.subtle.verify('HMAC', key, sig, data)
+  } catch {
+    return false
+  }
+}
+
 async function checkRateLimit(
   supabaseUrl: string,
   serviceKey: string,
@@ -62,6 +82,17 @@ Deno.serve(async (req) => {
 
     if (!openaiKey) {
       return new Response(JSON.stringify({ error: 'Service misconfigured' }), { status: 503, headers: corsHeaders })
+    }
+
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET')
+    if (jwtSecret) {
+      const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+      if (!token || !(await verifySupabaseJwt(token, jwtSecret))) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
     if (supabaseUrl && serviceKey) {
