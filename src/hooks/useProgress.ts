@@ -79,17 +79,19 @@ export function useProgress() {
   })
 
   const fromRemote = useRef(false)
+  const hasLoaded = useRef(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // On mount: load progress from Supabase for THIS device_id (last saved on this device wins)
   useEffect(() => {
     fetchLatestProgress()
       .then((remote) => {
+        hasLoaded.current = true
         if (!remote) return
         fromRemote.current = true
         setProgress({ ...defaultProgress, ...(remote as Partial<UserProgress>) })
       })
-      .catch(console.error)
+      .catch((e) => { hasLoaded.current = true; console.error(e) })
   }, [])
 
   useEffect(() => {
@@ -99,6 +101,8 @@ export function useProgress() {
       console.error('Failed to save progress:', e)
       window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
     }
+    // Don't write to Supabase until remote data has been fetched — avoids overwriting real progress with defaultProgress
+    if (!hasLoaded.current) return
     // Skip Supabase save when this state change came from Supabase load
     if (fromRemote.current) {
       fromRemote.current = false
