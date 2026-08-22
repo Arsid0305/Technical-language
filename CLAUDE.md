@@ -37,9 +37,12 @@ git clone https://github.com/Arsid0305/TEMPLATE /tmp/arsid-template
 
 ## Инфраструктура
 
-- Фронтенд: Vercel — автодеплой при пуше в `main`
-- Бэкенд: Supabase Edge Functions — GitHub Actions
+_Проверено: 2026-08-19._
+
+- Фронтенд: Vercel — автодеплой при пуше в `main` (⚠️ статус: до августа 2026 работал; проверить свежий деплой в Vercel Dashboard перед тем как считать что рабочий, из-за общего T&S-флага у аккаунта `Arsid0305` — см. Kino-app/CLAUDE.md TEMPORARY-блок).
+- Бэкенд: Supabase Edge Functions — деплой через GitHub Actions или Supabase MCP (`deploy_edge_function`), если Actions не срабатывают.
 - Репо: github.com/Arsid0305/Technical-language
+- Supabase: общий проект с Kino-app — `ovhwxfdtkzwxfomdlgjv`, схема `technical_language` (⚠️ не тащить чужие миграции — см. `AI_OS/MEMORY/tasks/cross-repo-todo.md`).
 
 ---
 
