@@ -316,7 +316,7 @@ Requirements:
     }
     const validVocabulary = Array.isArray(lessonContent.text?.vocabulary) &&
       lessonContent.text.vocabulary.length > 0 &&
-      lessonContent.text.vocabulary.every((v: unknown) => v && typeof v === 'object' && isString((v as any).term))
+      lessonContent.text.vocabulary.every((v: unknown) => v && typeof v === 'object' && isString((v as any).word))
     if (
       !isString(lessonContent.text?.content) ||
       !validVocabulary ||
