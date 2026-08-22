@@ -19,9 +19,22 @@
 
 ---
 
-## Стиль общения Claude
+## Каноны (rules как атомы)
 
-Канон — `AI_OS/SYSTEM.md §4` + `AI_OS/CLAUDE.md` («Правила краткости»).
+Универсальные правила — в `docs/rules/core/*.md` (SSOT в AI_OS, синкается автоматически):
+
+- Начало / конец сессии — [`docs/rules/core/session-lifecycle.md`](docs/rules/core/session-lifecycle.md)
+- Стиль общения / краткость — [`docs/rules/core/communication-style.md`](docs/rules/core/communication-style.md)
+- Git flow, запрет флагов — [`docs/rules/core/git-flow.md`](docs/rules/core/git-flow.md)
+- GitHub anti-abuse — [`docs/rules/core/github-anti-abuse.md`](docs/rules/core/github-anti-abuse.md)
+- BIG / SMALL — [`docs/rules/core/task-classification.md`](docs/rules/core/task-classification.md)
+- Принципы работы с кодом — [`docs/rules/core/code-principles.md`](docs/rules/core/code-principles.md)
+- Subagents (worktree, JSON-schema контракты) — [`docs/rules/core/subagents.md`](docs/rules/core/subagents.md)
+- Audit-триггер — [`docs/rules/core/audit-trigger.md`](docs/rules/core/audit-trigger.md)
+- Выбор модели `haiku`/`sonnet`/`opus` — `llm_wiki/wiki/workflow.md`
+- Context Mode — `llm_wiki/wiki/context-mode.md`
+
+Архитектура rules и правила синка — [`docs/rules/README.md`](docs/rules/README.md).
 
 ---
 
@@ -70,12 +83,6 @@ _Проверено: 2026-08-19._
 
 ---
 
-## Subagents и выбор модели
-
-Канон — `AI_OS/CLAUDE.md` (Subagents) + `llm_wiki/wiki/workflow.md` (таблица `haiku`/`sonnet`/`opus`).
-
----
-
 ## Среда Claude
 
 - node_modules: нет (npm ci)
@@ -95,14 +102,6 @@ _Проверено: 2026-08-19._
 5. Тестируем на проде
 
 **Требует:** Settings → General → «Allow auto-merge» включён в репо.
-
----
-
-## Правила Git
-
-- Разрабатывать на ветке `claude/...`, никогда не пушить напрямую в `main`
-- Никогда не использовать `--no-verify`, `--force`, `--no-gpg-sign`
-- Синхронизация с основной: `git pull origin main`
 
 ---
 
