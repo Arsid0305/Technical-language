@@ -61,10 +61,14 @@ async function checkRateLimit(
         p_limit: limitPerHour,
       }),
     })
-    if (!res.ok) return true
+    if (!res.ok) {
+      console.error(`checkRateLimit RPC failed for lookup-word: HTTP ${res.status}`)
+      return false
+    }
     return await res.json() as boolean
-  } catch {
-    return true
+  } catch (e) {
+    console.error(`checkRateLimit exception for lookup-word:`, e)
+    return false
   }
 }
 
