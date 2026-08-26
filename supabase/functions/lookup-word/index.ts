@@ -160,8 +160,10 @@ Return ONLY a JSON object, no markdown:
     clearTimeout(timeout)
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}))    
-      throw new Error(`OpenAI error ${res.status}: ${err.error?.message ?? 'unknown'}`)
+      // Тело апстрима — только в лог: содержит org_id, request_id, детали квоты.
+      const body = await res.text().catch(() => '')
+      console.error(`OpenAI ${res.status}: ${body.slice(0, 500)}`)
+      throw new Error(`upstream_${res.status}`)
     }
 
     const data = await res.json()
@@ -178,7 +180,8 @@ Return ONLY a JSON object, no markdown:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('lookup-word failure:', error instanceof Error ? error.message : String(error))
+    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

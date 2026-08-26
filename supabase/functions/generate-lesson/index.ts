@@ -296,8 +296,10 @@ Requirements:
     clearTimeout(timeout)
 
     if (!openaiRes.ok) {
-      const err = await openaiRes.json().catch(() => ({}))
-      throw new Error(`OpenAI error ${openaiRes.status}: ${err.error?.message ?? 'unknown'}`)
+      // Тело апстрима — только в лог: содержит org_id, request_id, детали квоты.
+      const body = await openaiRes.text().catch(() => '')
+      console.error(`OpenAI ${openaiRes.status}: ${body.slice(0, 500)}`)
+      throw new Error(`upstream_${openaiRes.status}`)
     }
 
     const openaiData = await openaiRes.json()
@@ -349,7 +351,8 @@ Requirements:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('generate-lesson failure:', error instanceof Error ? error.message : String(error))
+    return new Response(JSON.stringify({ error: 'Service temporarily unavailable' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
