@@ -19,8 +19,13 @@ _Rule: always-on. Источник: AI_OS/SYSTEM.md §10 (без GitHub Anti-Abu
 
 ## PR flow
 
-- PR в `main` — **не draft** (draft пропускается `automerge.yml`, guard `draft == false`).
-- `automerge.yml` сам включает native auto-merge через GraphQL и сольёт, когда required checks пройдут.
+> ⛔ **Секция ниже перекрыта** правилом «Мерж — только вручную. Автомерж исключён»
+> в [`github-anti-abuse.md`](github-anti-abuse.md). Действует оно: PR создаётся **draft'ом**,
+> мержит кнопкой в веб-интерфейсе только владелица, API-мерж запрещён.
+> Описание автомержа оставлено как справка об устройстве `automerge.yml`.
+
+- ~~PR в `main` — **не draft** (draft пропускается `automerge.yml`, guard `draft == false`).~~
+- ~~`automerge.yml` сам включает native auto-merge через GraphQL и сольёт, когда required checks пройдут.~~
 - Если CI красный — PR висит до следующего push с фиксом.
 
 ## Правила редактирования файлов
