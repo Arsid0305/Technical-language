@@ -103,6 +103,8 @@ _Проверено: 2026-08-19._
 
 **Требует:** Settings → General → «Allow auto-merge» включён в репо.
 
+> ⚠️ **Шаги 2 и 4 сейчас не работают** — GitHub Actions заблокированы на аккаунте ([CI-6], подтверждено 2026-09-12). PR мержить вручную через `mcp__github__merge_pull_request`, Edge Functions деплоить вручную (см. «Ручные шаги»). Шаг 3 (Vercel) от Actions не зависит — работает.
+
 ---
 
 ## Ручные шаги (сообщать по мере необходимости)
@@ -110,6 +112,17 @@ _Проверено: 2026-08-19._
 - **GitHub Secret `SBP_ACCESS_TOKEN`** — при первом появлении `supabase/functions/`
 - **GitHub Secret `SUPABASE_PROJECT_REF`** — то же самое
 - **Vercel** — подключить репо на vercel.com при первом деплое фронтенда
+
+**Деплой Edge Functions вручную** (пока держится [CI-6]). Пользователь на Windows, PowerShell:
+```powershell
+npm install -g supabase
+supabase login                      # токен: supabase.com/dashboard → Account → Access Tokens
+cd C:\Users\arols\Technical-language
+git pull
+supabase functions deploy generate-lesson --project-ref ovhwxfdtkzwxfomdlgjv
+supabase functions deploy lookup-word    --project-ref ovhwxfdtkzwxfomdlgjv
+```
+Запускать **из корня репо** — CLI ищет `supabase/functions/<name>/index.ts` относительно cwd, иначе `Entrypoint path does not exist`. `WARNING: Docker is not running` — безвредно, для remote-деплоя Docker не нужен. Проверено 2026-09-12.
 
 ---
 
@@ -125,6 +138,7 @@ _Проверено: 2026-08-19._
 - ~~**[SEC-4] RLS и схема БД**~~ ✅ **FIXED** (PR #30, 2026-05-27) — RLS политики для `technical_language.lessons` и `technical_language.glossary`; код переведён на `VITE_SUPABASE_PUBLISHABLE_KEY` и `Accept-Profile/Content-Profile: technical_language`; `public.glossary` удалён.
 - ~~**[SEC-5] `force=true` без авторизации**~~ ✅ **FIXED** (PR #39, 2026-05-28) — отдельный rate limit 3/час на IP для `force=true`, предотвращает спам OpenAI.
 - **[SEC-6] RLS glossary/progress широко открыт (`USING (true)`)** — любой с publishable-ключом может прочитать/удалить весь словарь всех устройств. Модель фундаментально анонимная (нет auth). Мера: перенести glossary/progress-IO в Edge Function с HMAC-проверкой device_id или ввести client-side JWT c device_id claim. Прецедент: audit 2026-07-11.
+- **[SEC-9] `device_id` в проде = строка `user`, не UUID** (обнаружено 2026-09-12) — `getDeviceId()` (`src/lib/glossaryService.ts:9`) генерирует `crypto.randomUUID()`, но в `technical_language.progress` единственная строка с `device_id = 'user'`, и приложение её читает — значит в localStorage телефона лежит `user`. В связке с SEC-6 (RLS `USING (true)`) ID тривиально угадывается → любой может прочитать и затереть прогресс и словарь. Мера: выяснить происхождение значения, мигрировать на UUID.
 
 ### 🟠 Высокие (надёжность/данные)
 
@@ -132,6 +146,8 @@ _Проверено: 2026-08-19._
 - **[DATA-2] Glossary sync fire-and-forget** — `upsertGlossaryWord().catch(console.error)` молча теряет данные при сбое сети. Файл: `src/pages/Index.tsx:77-80`
 - **[PERF-1] N+1 запросов при сохранении словаря** — `words.forEach(word => upsertGlossaryWord(...))` делает по 1 HTTP POST на каждое слово (10-15 запросов). Нужен bulk-upsert. Файл: `src/pages/Index.tsx:77`
 - **[DATA-3] Race в generate-lesson при concurrent cache-miss** — два одновременных POST для одного `lessonNumber` → оба вызовут OpenAI, второй upsert затрёт. Нужен `pg_advisory_xact_lock(hashtext('lesson:' || lessonNumber))` в начале.
+- ~~**[DATA-4] Race при старте: `defaultProgress` затирал прогресс в Supabase**~~ ✅ **FIXED** (PR #50, 2026-09-12) — на старте state = `defaultProgress` (`currentDay: 1`), это запускало save-таймер на 1500 мс; если `fetchLatestProgress()` не успевал ответить — в Supabase уходил `currentDay: 1` и пустой `days`. Добавлен `hasLoaded` ref в `useProgress.ts`: запись в Supabase заблокирована до ответа remote-фетча. **Прецедент:** прогресс пользователя дважды сбрасывался с урока 8 на урок 1; восстановлен вручную SQL-апдейтом `technical_language.progress` (словарь уцелел, `days` пришлось восстанавливать синтетически — реальные отметки и ошибки уроков 1-7 потеряны).
+- ~~**[DATA-5] Валидация словаря в `generate-lesson` проверяла несуществующее поле**~~ ✅ **FIXED** (PR #51, 2026-09-12) — проверялось `v.term`, а промпт возвращает `v.word` → любой некэшированный урок падал с 502. Файл: `supabase/functions/generate-lesson/index.ts:325`
 
 ### 🟡 Средние (качество/CI)
 
@@ -139,6 +155,7 @@ _Проверено: 2026-08-19._
 - ~~**[CI-2] Единственный тест — `expect(true).toBe(true)`**~~ частично — `automerge.yml` теперь блокирует merge при упавшем build/test (2026-07-11). Написать реальные тесты — TODO отдельно.
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**
+- **[CI-6] GitHub Actions заблокированы на аккаунте** (подтверждено 2026-09-12) — при ручном запуске workflow: `Failed to queue workflow run: Bad request - Actions has been disabled for this user`. Тот же T&S-флаг аккаунта `Arsid0305`, что отмечен в «Инфраструктуре». Вероятный триггер — массовое создание/мерж PR через API (`docs/rules/core/github-anti-abuse.md`, инцидент 2026-07-11). **Следствие:** `automerge.yml` и `deploy.yml` не срабатывают — PR мержатся вручную через `mcp__github__merge_pull_request`, Edge Functions деплоятся вручную (см. «Ручные шаги»). Мера: тикет в support.github.com на снятие флага.
 - ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED** (2026-07-11) — закреплён на SHA v1.1.1
 - **[TS-1] TypeScript strict mode отключён**
 
