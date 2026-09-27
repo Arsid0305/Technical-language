@@ -191,8 +191,9 @@ Deno.serve(async (req) => {
     }
 
     if (!force) {
+      // Вариантов у урока может быть несколько — отдаём последний сгенерированный.
       const existingRes = await fetch(
-        `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content`,
+        `${supabaseUrl}/rest/v1/lessons?lesson_number=eq.${lessonNumber}&select=content&order=created_at.desc&limit=1`,
         { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Accept-Profile': 'technical_language' } }
       )
       const existing = await existingRes.json()
@@ -335,17 +336,23 @@ Requirements:
       })
     }
 
-    await fetch(`${supabaseUrl}/rest/v1/lessons`, {
+    // Каждая генерация — отдельная строка: старые варианты урока сохраняются.
+    // Раньше здесь был upsert с merge-duplicates, он затирал предыдущий вариант.
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/lessons`, {
       method: 'POST',
       headers: {
         apikey: serviceKey,
         Authorization: `Bearer ${serviceKey}`,
         'Content-Type': 'application/json',
         'Content-Profile': 'technical_language',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
+        Prefer: 'return=minimal',
       },
       body: JSON.stringify({ lesson_number: lessonNumber, content: lessonContent }),
     })
+    if (!insertRes.ok) {
+      // Урок всё равно отдаём — в кэш не попал, сгенерируется заново при следующем открытии.
+      console.error(`lesson cache insert failed: HTTP ${insertRes.status}`)
+    }
 
     return new Response(JSON.stringify(lessonContent), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

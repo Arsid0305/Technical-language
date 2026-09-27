@@ -9,7 +9,7 @@ import { MistakesView } from '@/components/MistakesView'
 import { GlossaryView } from '@/components/GlossaryView'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
-import { fetchOrGenerateLesson } from '@/lib/lessonService'
+import { fetchOrGenerateLesson, fetchLessonVariants, loadLessonVariants } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 import {
   getDeviceId,
@@ -61,13 +61,21 @@ const Index = () => {
     ? (progress.days[targetDay - 1]?.mistakes?.length ?? 0)
     : 0
 
-  const { data: lesson, isLoading, error, refetch } = useQuery({
-    queryKey: ['lesson', targetDay],
-    queryFn: () => fetchOrGenerateLesson(targetDay, prevMistakeCount),
+  const { data: variants, isLoading, error, refetch } = useQuery({
+    queryKey: ['lessonVariants', targetDay],
+    queryFn: () => loadLessonVariants(targetDay, prevMistakeCount),
     staleTime: Infinity,
     retry: 2,
     gcTime: 1000 * 60 * 60,
   })
+
+  // Показываем последний сгенерированный вариант; старые доступны переключателем.
+  const [variantIndex, setVariantIndex] = useState<number | null>(null)
+  useEffect(() => { setVariantIndex(null) }, [targetDay])
+
+  const variantCount = variants?.length ?? 0
+  const shownIndex = variantIndex ?? Math.max(0, variantCount - 1)
+  const lesson = variants?.[shownIndex]?.lesson
 
   const handleAddToGlossary = useCallback((
     words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]
@@ -122,8 +130,12 @@ const Index = () => {
   const handleRegenerate = useCallback(async () => {
     setIsRegenerating(true)
     try {
-      const fresh = await fetchOrGenerateLesson(targetDay, prevMistakeCount, true)
-      queryClient.setQueryData(['lesson', targetDay], fresh)
+      await fetchOrGenerateLesson(targetDay, prevMistakeCount, true)
+      const fresh = await fetchLessonVariants(targetDay)
+      if (fresh.length === 0) throw new Error('empty')
+      queryClient.setQueryData(['lessonVariants', targetDay], fresh)
+      setVariantIndex(fresh.length - 1)
+      toast.success(`Готов вариант ${fresh.length}`)
     } catch {
       toast.error('Не удалось перегенерировать урок')
     } finally {
@@ -177,12 +189,35 @@ const Index = () => {
             </Button>
             <div className="flex items-center gap-1">
               <span className="text-sm text-muted-foreground">Урок {targetDay}</span>
+              {variantCount > 1 && (
+                <div className="flex items-center gap-0.5 ml-1" title="Варианты урока">
+                  <button
+                    onClick={() => setVariantIndex(Math.max(0, shownIndex - 1))}
+                    disabled={shownIndex === 0}
+                    className="px-1 text-muted-foreground/50 hover:text-foreground disabled:opacity-25"
+                    aria-label="Предыдущий вариант"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-xs text-muted-foreground/70 tabular-nums">
+                    {shownIndex + 1}/{variantCount}
+                  </span>
+                  <button
+                    onClick={() => setVariantIndex(Math.min(variantCount - 1, shownIndex + 1))}
+                    disabled={shownIndex === variantCount - 1}
+                    className="px-1 text-muted-foreground/50 hover:text-foreground disabled:opacity-25"
+                    aria-label="Следующий вариант"
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
               <Button
                 variant="ghost" size="sm"
                 onClick={handleRegenerate}
                 disabled={isRegenerating}
                 className="h-6 w-6 p-0 text-muted-foreground/40 hover:text-muted-foreground"
-                title="Перегенерировать урок"
+                title="Сгенерировать ещё вариант"
               >
                 {isRegenerating
                   ? <Loader2 className="w-3 h-3 animate-spin" />
@@ -199,6 +234,7 @@ const Index = () => {
       <main className="max-w-2xl mx-auto px-4 py-8 pb-24">
         {currentView === 'today' && (
           <TodayView
+            key={targetDay}
             lesson={lesson} dayProgress={dayProgress}
             onMarkTextCompleted={() => markTextCompleted(targetDay)}
             onMarkTasksCompleted={() => markTasksCompleted(targetDay)}

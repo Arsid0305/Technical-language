@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DailyLesson } from '@/data/dailyContent';
 import { DayProgress } from '@/hooks/useProgress';
 import { DayHeader } from './DayHeader';
@@ -31,7 +31,13 @@ export function TodayView({
     return 'reading';
   });
 
+  // Повтор пройденного урока: пока идёт разбор, ошибка меняет dayProgress,
+  // и эффект ниже выбрасывал обратно на «завершено». Флаг это останавливает.
+  // Сбрасывать не нужно — Index монтирует TodayView заново на каждый урок (key={targetDay}).
+  const stagePinned = useRef(false);
+
   useEffect(() => {
+    if (stagePinned.current) return;
     if (dayProgress.consolidationCompleted) setStage('complete');
     else if (dayProgress.tasksCompleted) setStage('consolidation');
     else if (dayProgress.textCompleted) setStage('tasks');
@@ -84,15 +90,25 @@ export function TodayView({
       )}
 
       {stage === 'complete' && (
-        <ConsolidationStep
-          tasks={lesson.consolidation}
-          day={lesson.text.day}
-          isCompleted={true}
-          onComplete={() => {}}
-          onMistake={onMistake}
-          onNextLesson={onNextLesson}
-          onRepeat={() => setStage('tasks')}
-        />
+        <>
+          <ReadingText
+            text={lesson.text}
+            onFinishReading={() => {}}
+            isCompleted={true}
+            onAddToGlossary={onAddToGlossary}
+          />
+          <div className="mt-12 border-t border-border">
+            <ConsolidationStep
+              tasks={lesson.consolidation}
+              day={lesson.text.day}
+              isCompleted={true}
+              onComplete={() => {}}
+              onMistake={onMistake}
+              onNextLesson={onNextLesson}
+              onRepeat={() => { stagePinned.current = true; setStage('tasks'); }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
