@@ -199,6 +199,7 @@ const Index = () => {
       <main className="max-w-2xl mx-auto px-4 py-8 pb-24">
         {currentView === 'today' && (
           <TodayView
+            key={targetDay}
             lesson={lesson} dayProgress={dayProgress}
             onMarkTextCompleted={() => markTextCompleted(targetDay)}
             onMarkTasksCompleted={() => markTasksCompleted(targetDay)}
