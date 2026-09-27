@@ -93,17 +93,26 @@ _Проверено: 2026-08-19._
 
 ## Рабочий процесс
 
-Схема: `ветки` → PR → `main` (после ревью автомержем) → Vercel
+Схема: `одна ветка` → `один PR` → ручной мерж → Vercel
 
-1. Claude пишет код → пушит в ветку `claude/...`
-2. Создаётся PR → `automerge.yml` автоматически мержит его в `main` через GitHub API (squash)
-3. Vercel деплоит фронтенд (1-2 мин)
-4. GitHub Actions деплоит Edge Functions (1-2 мин)
-5. Тестируем на проде
+1. **Вся работа сессии — в одну ветку и один PR.** Новая задача — коммит туда же,
+   а не новый PR. Отдельный PR заводить только если владелица попросит.
+2. **Мерж — только вручную**, кнопкой в веб-интерфейсе. Мерж через API запрещён,
+   `mcp__github__merge_pull_request` не использовать. Автомерж удалён из репо
+   (2026-09-12), `automerge.yml` остался только как CI — сборка и тесты.
+3. **PR не draft** — владелица draft'ами не пользуется.
+4. **Напоминать обязательно** — про мерж PR и про деплой, каждый раз, а не по случаю.
+5. Vercel деплоит фронтенд сам после мержа в `main` (1-2 мин).
+6. Edge Functions деплоятся отдельно — через Supabase MCP (`deploy_edge_function`)
+   или вручную по инструкции ниже. Пуш в `main` их **не** выкатывает.
 
-**Требует:** Settings → General → «Allow auto-merge» включён в репо.
+Каноны целиком — [`docs/rules/core/github-anti-abuse.md`](docs/rules/core/github-anti-abuse.md)
+(ручной мерж, один PR, draft) и [`docs/rules/core/git-flow.md`](docs/rules/core/git-flow.md).
 
-> ⚠️ **Шаги 2 и 4 сейчас не работают** — GitHub Actions заблокированы на аккаунте ([CI-6], подтверждено 2026-09-12). PR мержить вручную через `mcp__github__merge_pull_request`, Edge Functions деплоить вручную (см. «Ручные шаги»). Шаг 3 (Vercel) от Actions не зависит — работает.
+_Состояние на 2026-09-27: T&S-флаг с аккаунта снят, GitHub Actions снова работают
+(прогон #100, production-деплой Vercel прошёл). Правила ручного мержа и одного PR
+сохранены по прямому указанию владелицы — это её постоянное предпочтение,
+а не обход блокировки._
 
 ---
 
@@ -113,7 +122,7 @@ _Проверено: 2026-08-19._
 - **GitHub Secret `SUPABASE_PROJECT_REF`** — то же самое
 - **Vercel** — подключить репо на vercel.com при первом деплое фронтенда
 
-**Деплой Edge Functions вручную** (пока держится [CI-6]). Пользователь на Windows, PowerShell:
+**Деплой Edge Functions вручную** — если Supabase MCP недоступен. Пользователь на Windows, PowerShell:
 ```powershell
 npm install -g supabase
 supabase login                      # токен: supabase.com/dashboard → Account → Access Tokens
@@ -157,7 +166,7 @@ supabase functions deploy lookup-word    --project-ref ovhwxfdtkzwxfomdlgjv
 - ~~**[CI-2] Единственный тест — `expect(true).toBe(true)`**~~ частично — `automerge.yml` теперь блокирует merge при упавшем build/test (2026-07-11). Написать реальные тесты — TODO отдельно.
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**
-- **[CI-6] GitHub Actions заблокированы на аккаунте** (подтверждено 2026-09-12) — при ручном запуске workflow: `Failed to queue workflow run: Bad request - Actions has been disabled for this user`. Тот же T&S-флаг аккаунта `Arsid0305`, что отмечен в «Инфраструктуре». Вероятный триггер — массовое создание/мерж PR через API (`docs/rules/core/github-anti-abuse.md`, инцидент 2026-07-11). **Следствие:** `automerge.yml` и `deploy.yml` не срабатывают — PR мержатся вручную через `mcp__github__merge_pull_request`, Edge Functions деплоятся вручную (см. «Ручные шаги»). Мера: тикет в support.github.com на снятие флага.
+- ~~**[CI-6] GitHub Actions заблокированы на аккаунте**~~ ✅ **СНЯТО** (2026-09-27) — T&S-флаг аккаунта `Arsid0305` снят, Actions работают (прогон #100), Vercel снова собирает production. Держалось с 26 июня: всё это время `automerge.yml` и `deploy.yml` не запускались, а прод жил на июньской сборке. **Но:** ручной мерж и один PR остаются по прямому указанию владелицы — это предпочтение, а не обход блокировки, см. `docs/rules/core/github-anti-abuse.md`. Job `automerge` удалён из workflow, `deploy.yml` для Edge Functions не восстанавливали — деплоим через Supabase MCP.
 - ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED** (2026-07-11) — закреплён на SHA v1.1.1
 - **[TS-1] TypeScript strict mode отключён**
 
