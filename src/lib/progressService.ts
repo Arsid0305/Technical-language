@@ -1,8 +1,12 @@
-import { getDeviceId } from './glossaryService'
-
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 const DB_SCHEMA = 'technical_language'
+
+// Один ключ на все устройства — прогресс общий между телефоном и ноутбуком.
+// Так задумано: у программы одна пользовательница, входа по логину нет.
+// НЕ заменять на device_id — это уже делал аудит (PR #48) и разъехался прогресс:
+// каждое устройство завело свою запись и открывало урок 1. Прецедент — CLAUDE.md, SEC-9.
+const SYNC_KEY = 'user'
 
 const baseHeaders = {
   apikey: SUPABASE_ANON_KEY,
@@ -11,9 +15,8 @@ const baseHeaders = {
 }
 
 export async function fetchLatestProgress(): Promise<Record<string, unknown> | null> {
-  const deviceId = getDeviceId()
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/progress?device_id=eq.${encodeURIComponent(deviceId)}&select=data`,
+    `${SUPABASE_URL}/rest/v1/progress?device_id=eq.${SYNC_KEY}&select=data`,
     { headers: { ...baseHeaders, 'Accept-Profile': DB_SCHEMA } }
   )
   if (!res.ok) {
@@ -27,11 +30,10 @@ export async function fetchLatestProgress(): Promise<Record<string, unknown> | n
 export async function saveProgressToSupabase(
   data: Record<string, unknown>
 ): Promise<void> {
-  const deviceId = getDeviceId()
   const res = await fetch(`${SUPABASE_URL}/rest/v1/progress`, {
     method: 'POST',
     headers: { ...baseHeaders, 'Content-Profile': DB_SCHEMA, Prefer: 'resolution=merge-duplicates' },
-    body: JSON.stringify({ device_id: deviceId, data, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ device_id: SYNC_KEY, data, updated_at: new Date().toISOString() }),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
