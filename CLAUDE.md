@@ -103,8 +103,10 @@ _Проверено: 2026-08-19._
 3. **PR не draft** — владелица draft'ами не пользуется.
 4. **Напоминать обязательно** — про мерж PR и про деплой, каждый раз, а не по случаю.
 5. Vercel деплоит фронтенд сам после мержа в `main` (1-2 мин).
-6. Edge Functions деплоятся отдельно — через Supabase MCP (`deploy_edge_function`)
-   или вручную по инструкции ниже. Пуш в `main` их **не** выкатывает.
+6. Edge Functions выкатывает `deploy.yml` автоматически при мерже в `main`, если
+   правка затронула `supabase/functions/**`. Проверять результат в Actions —
+   до 2026-09-28 этот workflow был сломан (см. CI-5). Запасные пути: Supabase MCP
+   (`deploy_edge_function`) или вручную по инструкции ниже.
 
 Каноны целиком — [`docs/rules/core/github-anti-abuse.md`](docs/rules/core/github-anti-abuse.md)
 (ручной мерж, один PR, draft) и [`docs/rules/core/git-flow.md`](docs/rules/core/git-flow.md).
@@ -167,7 +169,7 @@ supabase functions deploy lookup-word    --project-ref ovhwxfdtkzwxfomdlgjv
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**
 - ~~**[CI-6] GitHub Actions заблокированы на аккаунте**~~ ✅ **СНЯТО** (2026-09-27) — T&S-флаг аккаунта `Arsid0305` снят, Actions работают (прогон #100), Vercel снова собирает production. Держалось с 26 июня: всё это время `automerge.yml` и `deploy.yml` не запускались, а прод жил на июньской сборке. **Но:** ручной мерж и один PR остаются по прямому указанию владелицы — это предпочтение, а не обход блокировки, см. `docs/rules/core/github-anti-abuse.md`. Job `automerge` удалён из workflow, `deploy.yml` для Edge Functions не восстанавливали — деплоим через Supabase MCP.
-- ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED** (2026-07-11) — закреплён на SHA v1.1.1
+- ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED по-настоящему** (2026-09-28) — аудит 2026-07-11 «закрепил» действие на SHA `2b81a2f…` с пометкой v1.1.1, но такого коммита в `supabase/setup-cli` нет. GitHub не мог скачать действие, и `deploy.yml` падал на первом шаге за 5 секунд — с июля автодеплой функций не сработал ни разу, а после снятия флага это маскировалось под «всё ещё не работает». Закреплено на реальном `1dedf2c…` (v1.7.3), SHA проверен через `git ls-remote`. **Урок: SHA для закрепления брать только из `git ls-remote --tags`, не из памяти модели.**
 - **[TS-1] TypeScript strict mode отключён**
 
 ### ℹ️ Низкие / технический долг
