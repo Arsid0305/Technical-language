@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { fetchOrGenerateLesson, fetchLessonVariants, loadLessonVariants } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 import {
-  getDeviceId,
+  getGlossaryKey,
   fetchGlossaryFromSupabase,
   upsertGlossaryWord,
   deleteGlossaryWord,
@@ -52,7 +52,7 @@ const Index = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setTargetDay(progress.currentDay)
-    fetchGlossaryFromSupabase(getDeviceId())
+    fetchGlossaryFromSupabase(getGlossaryKey())
       .then((remote) => mergeGlossary(remote))
       .catch(console.error)
   }, [])
@@ -81,7 +81,7 @@ const Index = () => {
     words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]
   ) => {
     addToGlossary(words)
-    const deviceId = getDeviceId()
+    const deviceId = getGlossaryKey()
     words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
       upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { translation, explanation, explanationRu, example, exampleRu })
         .catch(console.error)
@@ -99,19 +99,19 @@ const Index = () => {
 
   const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
     addManualWord(word, entry)
-    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), { ...entry, manual: true })
+    upsertGlossaryWord(getGlossaryKey(), word.toLowerCase().trim(), { ...entry, manual: true })
       .catch(console.error)
   }, [addManualWord])
 
   const handleEnrichWord = useCallback((word: string, entry: GlossaryEntry) => {
     addToGlossary([{ word, ...entry }])
-    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), entry)
+    upsertGlossaryWord(getGlossaryKey(), word.toLowerCase().trim(), entry)
       .catch(console.error)
   }, [addToGlossary])
 
   const handleDeleteWord = useCallback((word: string) => {
     deleteWord(word)
-    deleteGlossaryWord(getDeviceId(), word.toLowerCase().trim())
+    deleteGlossaryWord(getGlossaryKey(), word.toLowerCase().trim())
       .catch(console.error)
   }, [deleteWord])
 
