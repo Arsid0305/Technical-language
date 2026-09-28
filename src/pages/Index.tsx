@@ -61,9 +61,17 @@ const Index = () => {
     ? (progress.days[targetDay - 1]?.mistakes?.length ?? 0)
     : 0
 
+  // Последние 10 ошибок по всем урокам — генерация вплетает их слова в новый урок
+  // и добавляет вопросы на повтор (см. mistakesHint в generate-lesson).
+  const recentMistakes = Object.values(progress.days)
+    .flatMap((d) => d.mistakes ?? [])
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 10)
+    .map(({ question, userAnswer, correctAnswer }) => ({ question, userAnswer, correctAnswer }))
+
   const { data: variants, isLoading, error, refetch } = useQuery({
     queryKey: ['lessonVariants', targetDay],
-    queryFn: () => loadLessonVariants(targetDay, prevMistakeCount),
+    queryFn: () => loadLessonVariants(targetDay, prevMistakeCount, recentMistakes),
     staleTime: Infinity,
     retry: 2,
     gcTime: 1000 * 60 * 60,
@@ -130,7 +138,7 @@ const Index = () => {
   const handleRegenerate = useCallback(async () => {
     setIsRegenerating(true)
     try {
-      await fetchOrGenerateLesson(targetDay, prevMistakeCount, true)
+      await fetchOrGenerateLesson(targetDay, prevMistakeCount, true, recentMistakes)
       const fresh = await fetchLessonVariants(targetDay)
       if (fresh.length === 0) throw new Error('empty')
       queryClient.setQueryData(['lessonVariants', targetDay], fresh)
@@ -141,7 +149,7 @@ const Index = () => {
     } finally {
       setIsRegenerating(false)
     }
-  }, [targetDay, prevMistakeCount, queryClient])
+  }, [targetDay, prevMistakeCount, recentMistakes, queryClient])
 
   const dayProgress = getDayProgress(targetDay)
   const allMistakes = Object.values(progress.days).flatMap((d) => d.mistakes ?? [])

@@ -176,6 +176,13 @@ Deno.serve(async (req) => {
 
     const lessonNumber = Number(body.lessonNumber)
     const mistakeCount = Number(body.mistakeCount ?? 0)
+    // Последние ошибки ученицы — чтобы урок прицельно повторял то, что не далось.
+    // Приходят от клиента, поэтому режем объём: не больше 10 штук и 200 символов на поле.
+    const clip = (v: unknown) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 200) : '')
+    const mistakes = (Array.isArray(body.mistakes) ? body.mistakes : [])
+      .slice(0, 10)
+      .map((m: any) => ({ q: clip(m?.question), wrong: clip(m?.userAnswer), right: clip(m?.correctAnswer) }))
+      .filter((m: { q: string; right: string }) => m.q && m.right)
     const force = body.force === true
 
     if (!Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > 10000) {
@@ -216,6 +223,11 @@ Deno.serve(async (req) => {
         ? 'The student did perfectly — use slightly more natural phrasing.'
         : ''
 
+    const mistakesHint = mistakes.length === 0 ? '' : `
+The student recently got these wrong (question → her answer → correct answer):
+${mistakes.map((m: { q: string; wrong: string; right: string }, i: number) => `${i + 1}. ${m.q} → ${m.wrong || '—'} → ${m.right}`).join('\n')}
+Weave the words and ideas behind these mistakes naturally into the text, and add 2 extra questions (in tasks or consolidation) that re-test them in NEW wording — never copy the old questions.`
+
     const isBeginnerLesson = topic.beginner === true
 
     const vocabItem = `{"word": "exact term", "translation": "перевод (1–4 слова)", "explanation": "1–2 предложения по-русски: что это значит и где встретишь", "example": "One real English sentence showing the word in a dev context"}`
@@ -226,7 +238,7 @@ Deno.serve(async (req) => {
 Lesson ${lessonNumber} — VOCABULARY
 Topic: ${topic.title}
 Words: ${topic.detail}
-${difficultyHint}
+${difficultyHint}${mistakesHint}
 
 Write a SHORT text (180–220 words) using ALL vocabulary words naturally — like a GitHub comment thread, Slack message, or README section.
 
@@ -257,7 +269,7 @@ Requirements:
 Lesson ${lessonNumber}
 Topic: ${topic.title}
 Concepts: ${topic.detail}
-${difficultyHint}
+${difficultyHint}${mistakesHint}
 
 Return ONLY JSON:
 {
