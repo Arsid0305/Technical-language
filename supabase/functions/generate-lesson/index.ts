@@ -148,6 +148,7 @@ Deno.serve(async (req) => {
     if (jwtSecret) {
       const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
       if (!token || !(await verifySupabaseJwt(token, jwtSecret))) {
+        console.error('generate-lesson: JWT check failed')
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -161,6 +162,7 @@ Deno.serve(async (req) => {
 
     const allowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'generate-lesson', 20)
     if (!allowed) {
+      console.error('generate-lesson: rate limit hit')
       return new Response(
         JSON.stringify({ error: 'Rate limit exceeded. Try again in an hour.' }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' } }
@@ -183,6 +185,7 @@ Deno.serve(async (req) => {
     if (force) {
       const forceAllowed = await checkRateLimit(supabaseUrl, serviceKey, req, 'generate-lesson-force', 3)
       if (!forceAllowed) {
+        console.error('generate-lesson: regeneration rate limit hit')
         return new Response(
           JSON.stringify({ error: 'Regeneration rate limit exceeded. Try again in an hour.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '3600' } }
@@ -280,7 +283,7 @@ Requirements:
 - All questions English, all explanationRu Russian`
 
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 45000)
+    const timeout = setTimeout(() => controller.abort(), 100000)
 
     const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -309,32 +312,56 @@ Requirements:
       throw new Error('Empty response from OpenAI')
     }
 
-    const lessonContent = JSON.parse(openaiData.choices[0].message.content)
+    const parsed = JSON.parse(openaiData.choices[0].message.content)
+    // Модель иногда заворачивает урок в обёртку вида {"lesson": {...}}.
+    const lessonContent = parsed?.text ? parsed : (parsed?.lesson ?? parsed)
 
-    // Structural validation — inline (Deno без npm zod). Bad response → 502, кэш не пишем.
-    const isString = (v: unknown): v is string => typeof v === 'string' && v.length > 0
-    const isTask = (t: unknown): boolean => {
-      if (!t || typeof t !== 'object') return false
-      const x = t as Record<string, unknown>
-      return isString(x.id) &&
-        (typeof x.type === 'string') &&
-        Array.isArray(x.options) && x.options.every(isString) && x.options.length >= 2 &&
-        typeof x.correctIndex === 'number' && x.correctIndex >= 0 && x.correctIndex < (x.options as unknown[]).length
-    }
-    const validVocabulary = Array.isArray(lessonContent.text?.vocabulary) &&
-      lessonContent.text.vocabulary.length > 0 &&
-      lessonContent.text.vocabulary.every((v: unknown) => v && typeof v === 'object' && isString((v as any).word))
-    if (
-      !isString(lessonContent.text?.content) ||
-      !validVocabulary ||
-      !Array.isArray(lessonContent.tasks) || lessonContent.tasks.length < 1 || !lessonContent.tasks.every(isTask) ||
-      !Array.isArray(lessonContent.consolidation) || lessonContent.consolidation.length < 1 || !lessonContent.consolidation.every(isTask)
-    ) {
+    // Ответ нормализуем, а не отбраковываем целиком: одно кривое задание не должно
+    // ронять весь урок. Отказ — только когда показать нечего. И всегда с причиной в логе:
+    // раньше эта ветка молчала, и сбой генерации нельзя было разобрать.
+    const isString = (v: unknown): v is string => typeof v === 'string' && v.trim().length > 0
+    const normTasks = (list: unknown, prefix: string) =>
+      (Array.isArray(list) ? list : []).flatMap((t: unknown, i: number) => {
+        if (!t || typeof t !== 'object') return []
+        const x = t as Record<string, unknown>
+        const options = Array.isArray(x.options) ? x.options : []
+        const correctIndex = Number(x.correctIndex)
+        if (!isString(x.question) || options.length < 2 || !options.every(isString) ||
+            !Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= options.length) return []
+        return [{
+          ...x,
+          id: isString(x.id) ? x.id : `${prefix}${lessonNumber}-${i + 1}`,
+          type: isString(x.type) ? x.type : 'meaning',
+          correctIndex,
+        }]
+      })
+
+    const tasks = normTasks(lessonContent?.tasks, 't')
+    const consolidation = normTasks(lessonContent?.consolidation, 'c')
+    const extraPractice = normTasks(lessonContent?.extraPractice, 'e')
+    const vocabulary = (Array.isArray(lessonContent?.text?.vocabulary) ? lessonContent.text.vocabulary : [])
+      .map((v: any) => (v && typeof v === 'object') ? { ...v, word: isString(v.word) ? v.word : v.term } : null)
+      .filter((v: any) => v && isString(v.word))
+
+    const problems: string[] = []
+    if (!isString(lessonContent?.text?.content)) problems.push('text.content')
+    if (tasks.length === 0) problems.push('tasks')
+    if (consolidation.length === 0) problems.push('consolidation')
+    if (problems.length > 0) {
+      console.error(
+        `generate-lesson ${lessonNumber}: invalid structure (${problems.join(', ')}); ` +
+        `keys=${Object.keys(parsed ?? {}).join(',')}; sample=${JSON.stringify(parsed).slice(0, 400)}`
+      )
       return new Response(JSON.stringify({ error: 'Invalid lesson structure from AI' }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    lessonContent.text.vocabulary = vocabulary
+    lessonContent.tasks = tasks
+    lessonContent.consolidation = consolidation
+    lessonContent.extraPractice = extraPractice
 
     // Каждая генерация — отдельная строка: старые варианты урока сохраняются.
     // Раньше здесь был upsert с merge-duplicates, он затирал предыдущий вариант.
