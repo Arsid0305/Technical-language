@@ -4,6 +4,12 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 const DB_SCHEMA = 'technical_language';
 
+export interface MistakeHint {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+}
+
 export interface LessonVariant {
   id: string;
   lesson: DailyLesson;
@@ -41,7 +47,8 @@ export async function fetchLessonVariants(lessonNumber: number): Promise<LessonV
 export async function fetchOrGenerateLesson(
   lessonNumber: number,
   mistakeCount = 0,
-  force = false
+  force = false,
+  mistakes: MistakeHint[] = []
 ): Promise<DailyLesson> {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-lesson`, {
     method: 'POST',
@@ -50,7 +57,7 @@ export async function fetchOrGenerateLesson(
       apikey: SUPABASE_ANON_KEY,
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
     },
-    body: JSON.stringify({ lessonNumber, mistakeCount, force }),
+    body: JSON.stringify({ lessonNumber, mistakeCount, force, mistakes }),
   });
 
   if (!res.ok) {
@@ -68,12 +75,13 @@ export async function fetchOrGenerateLesson(
  */
 export async function loadLessonVariants(
   lessonNumber: number,
-  mistakeCount = 0
+  mistakeCount = 0,
+  mistakes: MistakeHint[] = []
 ): Promise<LessonVariant[]> {
   const existing = await fetchLessonVariants(lessonNumber);
   if (existing.length > 0) return existing;
 
-  const fresh = await fetchOrGenerateLesson(lessonNumber, mistakeCount);
+  const fresh = await fetchOrGenerateLesson(lessonNumber, mistakeCount, false, mistakes);
   const saved = await fetchLessonVariants(lessonNumber);
   return saved.length > 0
     ? saved

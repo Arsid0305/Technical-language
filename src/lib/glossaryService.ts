@@ -3,16 +3,15 @@ import type { GlossaryEntry } from '@/hooks/useProgress'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
-const DEVICE_ID_KEY = 'vibe-eng-device-id'
 const DB_SCHEMA = 'technical_language'
 
-export function getDeviceId(): string {
-  let id = localStorage.getItem(DEVICE_ID_KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem(DEVICE_ID_KEY, id)
-  }
-  return id
+// Один словарь на все устройства — как прогресс (SYNC_KEY в progressService, SEC-9).
+// Пользовательница одна, входа по логину нет. Раньше ключом был UUID устройства,
+// и словарь расползался: 722 строки на 92 слова по 12 устройствам.
+const GLOSSARY_KEY = 'user'
+
+export function getGlossaryKey(): string {
+  return GLOSSARY_KEY
 }
 
 const baseHeaders = {
@@ -58,7 +57,9 @@ export async function upsertGlossaryWord(
   word: string,
   entry: GlossaryEntry
 ): Promise<void> {
-  await fetch(`${SUPABASE_URL}/rest/v1/glossary`, {
+  // on_conflict обязателен: без него merge-duplicates сравнивает по первичному ключу id,
+  // которого нет в теле, и каждое сохранение создаёт новую строку-дубль.
+  await fetch(`${SUPABASE_URL}/rest/v1/glossary?on_conflict=device_id,word`, {
     method: 'POST',
     headers: { ...baseHeaders, 'Content-Profile': DB_SCHEMA, Prefer: 'resolution=merge-duplicates' },
     body: JSON.stringify({

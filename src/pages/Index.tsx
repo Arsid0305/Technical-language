@@ -12,7 +12,7 @@ import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react'
 import { fetchOrGenerateLesson, fetchLessonVariants, loadLessonVariants } from '@/lib/lessonService'
 import type { GlossaryEntry } from '@/hooks/useProgress'
 import {
-  getDeviceId,
+  getGlossaryKey,
   fetchGlossaryFromSupabase,
   upsertGlossaryWord,
   deleteGlossaryWord,
@@ -52,7 +52,7 @@ const Index = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setTargetDay(progress.currentDay)
-    fetchGlossaryFromSupabase(getDeviceId())
+    fetchGlossaryFromSupabase(getGlossaryKey())
       .then((remote) => mergeGlossary(remote))
       .catch(console.error)
   }, [])
@@ -61,9 +61,17 @@ const Index = () => {
     ? (progress.days[targetDay - 1]?.mistakes?.length ?? 0)
     : 0
 
+  // Последние 10 ошибок по всем урокам — генерация вплетает их слова в новый урок
+  // и добавляет вопросы на повтор (см. mistakesHint в generate-lesson).
+  const recentMistakes = Object.values(progress.days)
+    .flatMap((d) => d.mistakes ?? [])
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 10)
+    .map(({ question, userAnswer, correctAnswer }) => ({ question, userAnswer, correctAnswer }))
+
   const { data: variants, isLoading, error, refetch } = useQuery({
     queryKey: ['lessonVariants', targetDay],
-    queryFn: () => loadLessonVariants(targetDay, prevMistakeCount),
+    queryFn: () => loadLessonVariants(targetDay, prevMistakeCount, recentMistakes),
     staleTime: Infinity,
     retry: 2,
     gcTime: 1000 * 60 * 60,
@@ -81,7 +89,7 @@ const Index = () => {
     words: { word: string; translation: string; explanation?: string; explanationRu?: string; example?: string; exampleRu?: string }[]
   ) => {
     addToGlossary(words)
-    const deviceId = getDeviceId()
+    const deviceId = getGlossaryKey()
     words.forEach(({ word, translation, explanation, explanationRu, example, exampleRu }) => {
       upsertGlossaryWord(deviceId, word.toLowerCase().trim(), { translation, explanation, explanationRu, example, exampleRu })
         .catch(console.error)
@@ -99,19 +107,19 @@ const Index = () => {
 
   const handleAddManualWord = useCallback((word: string, entry: GlossaryEntry) => {
     addManualWord(word, entry)
-    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), { ...entry, manual: true })
+    upsertGlossaryWord(getGlossaryKey(), word.toLowerCase().trim(), { ...entry, manual: true })
       .catch(console.error)
   }, [addManualWord])
 
   const handleEnrichWord = useCallback((word: string, entry: GlossaryEntry) => {
     addToGlossary([{ word, ...entry }])
-    upsertGlossaryWord(getDeviceId(), word.toLowerCase().trim(), entry)
+    upsertGlossaryWord(getGlossaryKey(), word.toLowerCase().trim(), entry)
       .catch(console.error)
   }, [addToGlossary])
 
   const handleDeleteWord = useCallback((word: string) => {
     deleteWord(word)
-    deleteGlossaryWord(getDeviceId(), word.toLowerCase().trim())
+    deleteGlossaryWord(getGlossaryKey(), word.toLowerCase().trim())
       .catch(console.error)
   }, [deleteWord])
 
@@ -130,7 +138,7 @@ const Index = () => {
   const handleRegenerate = useCallback(async () => {
     setIsRegenerating(true)
     try {
-      await fetchOrGenerateLesson(targetDay, prevMistakeCount, true)
+      await fetchOrGenerateLesson(targetDay, prevMistakeCount, true, recentMistakes)
       const fresh = await fetchLessonVariants(targetDay)
       if (fresh.length === 0) throw new Error('empty')
       queryClient.setQueryData(['lessonVariants', targetDay], fresh)
@@ -141,7 +149,7 @@ const Index = () => {
     } finally {
       setIsRegenerating(false)
     }
-  }, [targetDay, prevMistakeCount, queryClient])
+  }, [targetDay, prevMistakeCount, recentMistakes, queryClient])
 
   const dayProgress = getDayProgress(targetDay)
   const allMistakes = Object.values(progress.days).flatMap((d) => d.mistakes ?? [])
