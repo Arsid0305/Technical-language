@@ -4,8 +4,11 @@ name: CI
 # Канон — docs/rules/core/github-anti-abuse.md.
 # Этот workflow только проверяет сборку и тесты; мержит PR кнопкой человек.
 
+# pull_request, не pull_request_target: GitHub блокирует его в публичных репо
+# (пробные отключения 9 и 16 ноября, полностью с 2026-12-02). PR идут из веток
+# этого же репо, секреты workflow не нужны.
 on:
-  pull_request_target:
+  pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review]
 
