@@ -23,20 +23,22 @@
 
 ## Каноны (rules как атомы)
 
-Универсальные правила — в `docs/rules/core/*.md` (SSOT в AI_OS, синкается автоматически):
+Универсальные правила — в `AI_OS/docs/rules/core/*.md` (SSOT, копий в этом репо нет). Если AI_OS не подключён к сессии — попросить подключить, по памяти не работать:
 
-- Начало / конец сессии — [`docs/rules/core/session-lifecycle.md`](docs/rules/core/session-lifecycle.md)
-- Стиль общения / краткость — [`docs/rules/core/communication-style.md`](docs/rules/core/communication-style.md)
-- Git flow, запрет флагов — [`docs/rules/core/git-flow.md`](docs/rules/core/git-flow.md)
-- GitHub anti-abuse — [`docs/rules/core/github-anti-abuse.md`](docs/rules/core/github-anti-abuse.md)
-- BIG / SMALL — [`docs/rules/core/task-classification.md`](docs/rules/core/task-classification.md)
-- Принципы работы с кодом — [`docs/rules/core/code-principles.md`](docs/rules/core/code-principles.md)
-- Subagents (worktree, JSON-schema контракты) — [`docs/rules/core/subagents.md`](docs/rules/core/subagents.md)
-- Audit-триггер — [`docs/rules/core/audit-trigger.md`](docs/rules/core/audit-trigger.md)
+- Начало / конец сессии — [`AI_OS/docs/rules/core/session-lifecycle.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/session-lifecycle.md)
+- Стиль общения / краткость — [`AI_OS/docs/rules/core/communication-style.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/communication-style.md)
+- Git flow, запрет флагов — [`AI_OS/docs/rules/core/git-flow.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/git-flow.md)
+- GitHub anti-abuse — [`AI_OS/docs/rules/core/github-anti-abuse.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/github-anti-abuse.md)
+- BIG / SMALL — [`AI_OS/docs/rules/core/task-classification.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/task-classification.md)
+- Принципы работы с кодом — [`AI_OS/docs/rules/core/code-principles.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/code-principles.md)
+- Subagents (worktree, JSON-schema контракты) — [`AI_OS/docs/rules/core/subagents.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/subagents.md)
+- Audit-триггер — [`AI_OS/docs/rules/core/audit-trigger.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/audit-trigger.md)
+- Разрешения веб-сессий — [`AI_OS/docs/rules/core/web-permissions.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/web-permissions.md)
+- Независимость от поставщика ИИ — [`AI_OS/docs/rules/core/vendor-independence.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/vendor-independence.md)
 - Выбор модели `haiku`/`sonnet`/`opus` — `llm_wiki/wiki/workflow.md`
 - Context Mode — `llm_wiki/wiki/context-mode.md`
 
-Архитектура rules и правила синка — [`docs/rules/README.md`](docs/rules/README.md).
+Архитектура rules — [`AI_OS/docs/rules/README.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/README.md).
 
 ---
 
@@ -110,8 +112,8 @@ _Проверено: 2026-08-19._
    до 2026-09-28 этот workflow был сломан (см. CI-5). Запасные пути: Supabase MCP
    (`deploy_edge_function`) или вручную по инструкции ниже.
 
-Каноны целиком — [`docs/rules/core/github-anti-abuse.md`](docs/rules/core/github-anti-abuse.md)
-(ручной мерж, один PR, draft) и [`docs/rules/core/git-flow.md`](docs/rules/core/git-flow.md).
+Каноны целиком — [`AI_OS/docs/rules/core/github-anti-abuse.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/github-anti-abuse.md)
+(ручной мерж, один PR, draft) и [`AI_OS/docs/rules/core/git-flow.md`](https://github.com/Arsid0305/AI_OS/blob/main/docs/rules/core/git-flow.md).
 
 _Состояние на 2026-09-27: T&S-флаг с аккаунта снят, GitHub Actions снова работают
 (прогон #100, production-деплой Vercel прошёл). Правила ручного мержа и одного PR
@@ -172,7 +174,7 @@ supabase functions deploy lookup-word    --project-ref ovhwxfdtkzwxfomdlgjv
 - ~~**[CI-2] Единственный тест — `expect(true).toBe(true)`**~~ частично — `automerge.yml` теперь блокирует merge при упавшем build/test (2026-07-11). Написать реальные тесты — TODO отдельно.
 - ~~**[CI-3] `actions/setup-node@v4` закреплён по тегу, не SHA**~~ ✅ **FIXED** (2026-05-24) — закреплён на SHA `49933ea5288caeca8642d1e84afbd3f7d6820020` (v4.4.0)
 - **[CI-4] Нет `npm audit` в CI**
-- ~~**[CI-6] GitHub Actions заблокированы на аккаунте**~~ ✅ **СНЯТО** (2026-09-27) — T&S-флаг аккаунта `Arsid0305` снят, Actions работают (прогон #100), Vercel снова собирает production. Держалось с 26 июня: всё это время `automerge.yml` и `deploy.yml` не запускались, а прод жил на июньской сборке. **Но:** ручной мерж и один PR остаются по прямому указанию владелицы — это предпочтение, а не обход блокировки, см. `docs/rules/core/github-anti-abuse.md`. Job `automerge` удалён из workflow. `deploy.yml` для Edge Functions работает с 2026-09-28 (после починки CI-5 и замены секрета).
+- ~~**[CI-6] GitHub Actions заблокированы на аккаунте**~~ ✅ **СНЯТО** (2026-09-27) — T&S-флаг аккаунта `Arsid0305` снят, Actions работают (прогон #100), Vercel снова собирает production. Держалось с 26 июня: всё это время `automerge.yml` и `deploy.yml` не запускались, а прод жил на июньской сборке. **Но:** ручной мерж и один PR остаются по прямому указанию владелицы — это предпочтение, а не обход блокировки, см. `AI_OS/docs/rules/core/github-anti-abuse.md`. Job `automerge` удалён из workflow. `deploy.yml` для Edge Functions работает с 2026-09-28 (после починки CI-5 и замены секрета).
 - ~~**[CI-5] `supabase/setup-cli@v1` тег, не SHA**~~ ✅ **FIXED по-настоящему** (2026-09-28) — аудит 2026-07-11 «закрепил» действие на SHA `2b81a2f…` с пометкой v1.1.1, но такого коммита в `supabase/setup-cli` нет. GitHub не мог скачать действие, и `deploy.yml` падал на первом шаге за 5 секунд — с июля автодеплой функций не сработал ни разу, а после снятия флага это маскировалось под «всё ещё не работает». Закреплено на реальном `1dedf2c…` (v1.7.3), SHA проверен через `git ls-remote`. **Урок: SHA для закрепления брать только из `git ls-remote --tags`, не из памяти модели.**
 - **[TS-1] TypeScript strict mode отключён**
 
